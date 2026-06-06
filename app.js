@@ -1843,8 +1843,8 @@ function saveUpdateFrontFields(unitId, frenteName, isConcluido) {
 
     const fData = u.frontsData[frenteName];
     fData.responsavel = document.getElementById('update-resp').value.trim();
-    fData.duracaoProj = parseInt(document.getElementById('update-dur-proj').value) || 1;
-    fData.duracaoReal = parseInt(document.getElementById('update-dur-real').value) || 1;
+    fData.duracaoProj = parseFloat(document.getElementById('update-dur-proj').value) || 1;
+    fData.duracaoReal = parseFloat(document.getElementById('update-dur-real').value) || 1;
 
     // Grab unified material inputs as text
     const matNome = document.getElementById('update-mat-nome').value.trim();
