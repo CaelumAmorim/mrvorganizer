@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>www.mrvorganizer.com.br</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    
+    <!-- Tela de Seleção de Obra -->
+    <div id="project-selector-container" class="login-overlay">
+        <div class="login-card" style="width: 650px; max-width: 95%;">
+            <div class="login-header">
+                <div class="logo-area" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 0.5rem;">
+                    <svg class="mrv-logo-svg" viewBox="440 1610 835 790" width="55" height="60">
+                        <defs>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(86.307152,86.307152,86.307152,-86.307152,345.08731,309.8739)"
+                               spreadMethod="pad"
+                               id="mrv-orange-select">
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0.313136" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.759091" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.776918" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,69.501572,69.501572,0,325.78262,318.24329)"
+                               spreadMethod="pad"
+                               id="mrv-green-select">
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0.053775" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.970182" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.972389" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,-34.98962,-34.98962,0,387.80527,353.23303)"
+                               spreadMethod="pad"
+                               id="mrv-overlap-select">
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0.029864" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.980136" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.981606" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="1" />
+                            </linearGradient>
+                        </defs>
+                        <g transform="matrix(1.3333333,0,0,-1.3333333,0,4096)">
+                            <g transform="matrix(6.8784653,0,0,6.8784653,-1908.6179,-892.09821)">
+                                <path d="m 415.987,399.919 -46.767,-46.686 17.991,-17.967 c 0.38,-0.381 0.594,-0.896 0.594,-1.434 v 0 -12.686 c 0,-1.603 -1.301,-2.902 -2.907,-2.902 v 0 h -34.292 l -0.007,-8.062 c 0,-3.213 2.609,-5.817 5.826,-5.817 v 0 h 63.687 c 3.217,0 5.826,2.604 5.826,5.817 v 0 85.634 c -0.01,3.503 -2.88,5.819 -5.872,5.819 v 0 c -1.432,0 -2.892,-0.53 -4.079,-1.716" fill="url(#mrv-orange-select)" stroke="none" />
+                                <path d="m 325.783,381.452 v -56.927 c 0,-3.469 2.815,-6.281 6.289,-6.281 v 0 h 18.534 l 0.013,15.581 c 0,0.538 0.214,1.053 0.595,1.433 v 0 l 18.006,17.975 -32.701,32.66 c -1.28,1.279 -2.856,1.852 -4.401,1.852 v 0 c -3.234,0 -6.335,-2.507 -6.335,-6.293" fill="url(#mrv-green-select)" stroke="none" />
+                                <path d="m 351.214,335.258 c -0.381,-0.38 -0.595,-0.895 -0.595,-1.433 v 0 l -0.013,-15.581 h 34.292 c 1.606,0 2.907,1.299 2.907,2.902 v 0 12.686 c 0,0.538 -0.214,1.053 -0.594,1.434 v 0 l -17.991,17.967 z" fill="url(#mrv-overlap-select)" stroke="none" />
+                            </g>
+                        </g>
+                    </svg>
+                    <div class="mrv-logo-text-container">
+                        <span class="mrv-logo-text" style="text-transform: lowercase; font-size: 1.75rem; letter-spacing: -0.03em; line-height: 1.1; display: inline-block;">www.mrv<span style="color: #f58521;">organizer</span>.com.br</span>
+                    </div>
+                </div>
+                <p style="margin-top: 0.5rem; font-size: 1rem; font-weight: 500;">Selecione a obra que deseja acessar:</p>
+            </div>
+            
+            <div class="project-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 1.5rem 0;">
+                <div class="project-card" data-project="chapada_fontana" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; text-align: center;">
+                    <i class="fa fa-building-circle-check text-success" style="font-size: 2.2rem; margin-bottom: 0.75rem;"></i>
+                    <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px;">Chapada Fontana</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Cuiabá - MT</p>
+                </div>
+                <div class="project-card" data-project="citta_splendore" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; text-align: center;">
+                    <i class="fa fa-building-shield text-success" style="font-size: 2.2rem; margin-bottom: 0.75rem;"></i>
+                    <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px;">Cittá Splendore</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Cuiabá - MT</p>
+                </div>
+            </div>
+            
+            <div class="login-footer">
+                <p class="powered-by">Powered by Rafael Amorim</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Login -->
+    <div id="login-container" class="login-overlay hidden">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-area" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 0.5rem;">
+                    <svg class="mrv-logo-svg" viewBox="440 1610 835 790" width="55" height="60">
+                        <defs>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(86.307152,86.307152,86.307152,-86.307152,345.08731,309.8739)"
+                               spreadMethod="pad"
+                               id="mrv-orange-login">
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0.313136" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.759091" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.776918" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,69.501572,69.501572,0,325.78262,318.24329)"
+                               spreadMethod="pad"
+                               id="mrv-green-login">
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0.053775" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.970182" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.972389" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,-34.98962,-34.98962,0,387.80527,353.23303)"
+                               spreadMethod="pad"
+                               id="mrv-overlap-login">
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0.029864" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.980136" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.981606" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="1" />
+                            </linearGradient>
+                        </defs>
+                        <g transform="matrix(1.3333333,0,0,-1.3333333,0,4096)">
+                            <g transform="matrix(6.8784653,0,0,6.8784653,-1908.6179,-892.09821)">
+                                <path d="m 415.987,399.919 -46.767,-46.686 17.991,-17.967 c 0.38,-0.381 0.594,-0.896 0.594,-1.434 v 0 -12.686 c 0,-1.603 -1.301,-2.902 -2.907,-2.902 v 0 h -34.292 l -0.007,-8.062 c 0,-3.213 2.609,-5.817 5.826,-5.817 v 0 h 63.687 c 3.217,0 5.826,2.604 5.826,5.817 v 0 85.634 c -0.01,3.503 -2.88,5.819 -5.872,5.819 v 0 c -1.432,0 -2.892,-0.53 -4.079,-1.716" fill="url(#mrv-orange-login)" stroke="none" />
+                                <path d="m 325.783,381.452 v -56.927 c 0,-3.469 2.815,-6.281 6.289,-6.281 v 0 h 18.534 l 0.013,15.581 c 0,0.538 0.214,1.053 0.595,1.433 v 0 l 18.006,17.975 -32.701,32.66 c -1.28,1.279 -2.856,1.852 -4.401,1.852 v 0 c -3.234,0 -6.335,-2.507 -6.335,-6.293" fill="url(#mrv-green-login)" stroke="none" />
+                                <path d="m 351.214,335.258 c -0.381,-0.38 -0.595,-0.895 -0.595,-1.433 v 0 l -0.013,-15.581 h 34.292 c 1.606,0 2.907,1.299 2.907,2.902 v 0 12.686 c 0,0.538 -0.214,1.053 -0.594,1.434 v 0 l -17.991,17.967 z" fill="url(#mrv-overlap-login)" stroke="none" />
+                            </g>
+                        </g>
+                    </svg>
+                    <div class="mrv-logo-text-container">
+                        <span class="mrv-logo-text" style="text-transform: lowercase; font-size: 1.75rem; letter-spacing: -0.03em; line-height: 1.1; display: inline-block;">www.mrv<span style="color: #f58521;">organizer</span>.com.br</span>
+                    </div>
+                </div>
+                <p>Controle de Produção e Qualidade</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username"><i class="fa fa-user"></i> Usuário</label>
+                    <input type="text" id="username" placeholder="Digite seu usuário" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fa fa-lock"></i> Senha</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Digite sua senha" required autocomplete="current-password">
+                        <button type="button" id="toggle-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
+                    </div>
+                </div>
+                <div id="login-error" class="error-msg hidden">
+                    <i class="fa fa-triangle-exclamation"></i> Usuário ou senha incorretos.
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span>Entrar no Sistema</span> <i class="fa fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+            <div class="login-footer">
+                <p>Modo: <span id="db-mode-indicator">Carregando...</span></p>
+                <p class="powered-by">Powered by Rafael Amorim</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Principal -->
+    <div id="app-container" class="app-layout hidden">
+        
+        <!-- Barra Lateral (Sidebar) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo" style="display: flex; align-items: center; gap: 8px;">
+                    <svg class="mrv-logo-svg" viewBox="440 1610 835 790" width="28" height="30">
+                        <defs>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(86.307152,86.307152,86.307152,-86.307152,345.08731,309.8739)"
+                               spreadMethod="pad"
+                               id="mrv-orange-sidebar">
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#f58521" offset="0.313136" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.759091" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="0.776918" />
+                                <stop style="stop-opacity:1;stop-color:#ffb819" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,69.501572,69.501572,0,325.78262,318.24329)"
+                               spreadMethod="pad"
+                               id="mrv-green-sidebar">
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#00d48c" offset="0.053775" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.970182" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="0.972389" />
+                                <stop style="stop-opacity:1;stop-color:#82eb5c" offset="1" />
+                            </linearGradient>
+                            <linearGradient
+                               x1="0" y1="0" x2="1" y2="0"
+                               gradientUnits="userSpaceOnUse"
+                               gradientTransform="matrix(0,-34.98962,-34.98962,0,387.80527,353.23303)"
+                               spreadMethod="pad"
+                               id="mrv-overlap-sidebar">
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0" />
+                                <stop style="stop-opacity:1;stop-color:#006b40" offset="0.029864" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.980136" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="0.981606" />
+                                <stop style="stop-opacity:1;stop-color:#089e57" offset="1" />
+                            </linearGradient>
+                        </defs>
+                        <g transform="matrix(1.3333333,0,0,-1.3333333,0,4096)">
+                            <g transform="matrix(6.8784653,0,0,6.8784653,-1908.6179,-892.09821)">
+                                <path d="m 415.987,399.919 -46.767,-46.686 17.991,-17.967 c 0.38,-0.381 0.594,-0.896 0.594,-1.434 v 0 -12.686 c 0,-1.603 -1.301,-2.902 -2.907,-2.902 v 0 h -34.292 l -0.007,-8.062 c 0,-3.213 2.609,-5.817 5.826,-5.817 v 0 h 63.687 c 3.217,0 5.826,2.604 5.826,5.817 v 0 85.634 c -0.01,3.503 -2.88,5.819 -5.872,5.819 v 0 c -1.432,0 -2.892,-0.53 -4.079,-1.716" fill="url(#mrv-orange-sidebar)" stroke="none" />
+                                <path d="m 325.783,381.452 v -56.927 c 0,-3.469 2.815,-6.281 6.289,-6.281 v 0 h 18.534 l 0.013,15.581 c 0,0.538 0.214,1.053 0.595,1.433 v 0 l 18.006,17.975 -32.701,32.66 c -1.28,1.279 -2.856,1.852 -4.401,1.852 v 0 c -3.234,0 -6.335,-2.507 -6.335,-6.293" fill="url(#mrv-green-sidebar)" stroke="none" />
+                                <path d="m 351.214,335.258 c -0.381,-0.38 -0.595,-0.895 -0.595,-1.433 v 0 l -0.013,-15.581 h 34.292 c 1.606,0 2.907,1.299 2.907,2.902 v 0 12.686 c 0,0.538 -0.214,1.053 -0.594,1.434 v 0 l -17.991,17.967 z" fill="url(#mrv-overlap-sidebar)" stroke="none" />
+                            </g>
+                        </g>
+                    </svg>
+                    <span class="logo-title-green" style="text-transform: lowercase; font-size: 1.15rem; letter-spacing: -0.02em;">www.mrv<span style="color: #f58521;">organizer</span>.com.br</span>
+                </div>
+                <button id="sidebar-toggle" class="btn-icon"><i class="fa fa-bars"></i></button>
+            </div>
+            
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fa fa-user-shield" id="user-role-icon"></i>
+                </div>
+                <div class="user-info">
+                    <h4 id="user-display-name">Nome do Usuário</h4>
+                    <span id="user-display-role" class="badge">Nível</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="#" class="nav-link active" data-target="page-mapa">
+                            <i class="fa fa-cubes"></i> <span>Mapa Geral</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-target="page-frentes">
+                            <i class="fa fa-list-check"></i> <span>Frentes de Serviço</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-target="page-insumos">
+                            <i class="fa fa-boxes-stacked"></i> <span>Consumo de Insumos</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link" data-target="page-reprovas">
+                            <i class="fa fa-clipboard-question"></i> <span>Histórico de Reprovas</span>
+                        </a>
+                    </li>
+                    <li class="admin-only">
+                        <a href="#" class="nav-link" data-target="page-usuarios">
+                            <i class="fa fa-users-gear"></i> <span>Gerenciar Usuários</span>
+                        </a>
+                    </li>
+                    <li class="admin-only">
+                        <a href="#" class="nav-link" data-target="page-config">
+                            <i class="fa fa-sliders"></i> <span>Configurações Obra</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sync-status" id="sync-status-sidebar">
+                    <i class="fa fa-circle-check text-success"></i> <span>Salvo Localmente</span>
+                </div>
+                <div class="powered-by-sidebar">Powered by Rafael Amorim</div>
+                <button id="btn-logout" class="btn btn-outline btn-block text-danger">
+                    <i class="fa fa-power-off"></i> <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Área de Conteúdo Principal -->
+        <main class="main-content">
+            
+            <!-- Cabeçalho (Navbar superior) -->
+            <header class="top-navbar">
+                <div class="nav-left">
+                    <h1 id="page-title">Mapa Geral da Obra</h1>
+                </div>
+                <div class="nav-right">
+                    <!-- Tema Switcher -->
+                    <button id="theme-toggle" class="btn-icon" title="Alternar Tema">
+                        <i class="fa fa-sun"></i>
+                    </button>
+                    <!-- Indicador de Sincronização em Rede -->
+                    <div id="connection-badge" class="connection-badge offline" title="Status de Sincronização com o Servidor">
+                        <span class="dot"></span>
+                        <span class="text">Local</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CONTEÚDO DAS PÁGINAS -->
+            <div class="content-container">
+                
+                <!-- PÁGINA 1: MAPA GERAL -->
+                <section id="page-mapa" class="page-section active">
+                    
+                    <!-- Painel de Resumo / Filtros rápidos -->
+                    <div class="dashboard-summary">
+                        <div class="summary-card">
+                            <div class="card-icon bg-green"><i class="fa fa-circle-check"></i></div>
+                            <div class="card-data">
+                                <h3 id="stat-concluidos">0</h3>
+                                <p>Unidades Aprovadas (VA)</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon bg-red"><i class="fa fa-triangle-exclamation"></i></div>
+                            <div class="card-data">
+                                <h3 id="stat-reprovados">0</h3>
+                                <p>Unidades Reprovadas (VQ/VA)</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon bg-amber"><i class="fa fa-person-digging"></i></div>
+                            <div class="card-data">
+                                <h3 id="stat-ativos">0</h3>
+                                <p>Unidades em Execução</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon bg-blue"><i class="fa fa-percent"></i></div>
+                            <div class="card-data">
+                                <h3 id="stat-progresso">0%</h3>
+                                <p>Progresso Geral da Obra</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtro do Mapa Geral (Frentes de serviço de interesse) -->
+                    <div class="filter-panel card">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-filter"></i> Legenda & Filtro de Frentes</h3>
+                            <button id="btn-clear-map-filter" class="btn btn-xs btn-outline hidden">Limpar Filtro</button>
+                        </div>
+                        <div class="frentes-legend-grid" id="map-frentes-legend">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+
+                    <!-- GRID DAS TORRES -->
+                    <div class="towers-container" id="towers-grid-root">
+                        <!-- Inserido dinamicamente via JS -->
+                    </div>
+                </section>
+
+                <!-- PÁGINA 2: FRENTES DE SERVIÇO (SUB-ABAS) -->
+                <section id="page-frentes" class="page-section">
+                    
+                    <!-- Sub-abas das frentes -->
+                    <div class="subtabs-container">
+                        <div class="subtabs-scroll" id="frentes-subtabs-list">
+                            <!-- Inserido dinamicamente via JS (12 frentes de serviço) -->
+                        </div>
+                    </div>
+
+                    <!-- Configurações de Cronograma e Projeções da Frente -->
+                    <div class="frente-cronograma-config card">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label for="frente-data-inicio"><i class="fa fa-calendar-days text-success"></i> Data Inicial do Serviço</label>
+                                <input type="date" id="frente-data-inicio" class="input-glow">
+                            </div>
+                            <div class="filter-group">
+                                <label for="frente-capacidade"><i class="fa fa-gauge-high text-success"></i> Capacidade Produtiva (Aptos/Dia)</label>
+                                <input type="number" id="frente-capacidade" min="0.001" step="any" value="2">
+                            </div>
+                            <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end; min-width: 140px; flex: 0.7;">
+                                <label><i class="fa fa-users text-success"></i> Equipe</label>
+                                <button type="button" id="btn-manage-colaboradores" class="btn btn-outline" style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <i class="fa fa-users-gear text-success"></i> Colaboradores (<span id="frente-colaboradores-count">0</span>)
+                                </button>
+                            </div>
+                            <div class="filter-group" style="flex: 2; min-width: 280px;">
+                                <label><i class="fa fa-clock"></i> Previsões de Conclusão</label>
+                                <div class="projection-badges-grid" id="frente-projections-grid">
+                                    <!-- Preenchido via JS (Torres e Obra) -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="frente-details card">
+                        <div class="frente-info-header">
+                            <div class="title-section">
+                                <h2 id="active-frente-title">Frente de Serviço</h2>
+                                <span class="badge" id="active-frente-units-count">0 Unidades Ativas</span>
+                            </div>
+                            <div class="actions-section">
+                                <button id="btn-frente-export" class="btn btn-outline btn-sm"><i class="fa fa-file-csv"></i> Exportar Dados</button>
+                            </div>
+                        </div>
+
+                        <p class="frente-description" id="active-frente-desc">Descrição da frente e sua lógica.</p>
+
+                        <!-- Filtros da Tabela de Frentes -->
+                        <div class="table-filters-container">
+                            <div class="filter-control">
+                                <label for="filter-frente-tower">Torre</label>
+                                <select id="filter-frente-tower">
+                                    <option value="all">Todas as Torres</option>
+                                    <option value="Torre 01">Torre 01</option>
+                                    <option value="Torre 02">Torre 02</option>
+                                    <option value="Torre 03">Torre 03</option>
+                                </select>
+                            </div>
+                            <div class="filter-control">
+                                <label for="filter-frente-status">Status no Serviço</label>
+                                <select id="filter-frente-status">
+                                    <option value="all">Todos os Status</option>
+                                    <option value="concluido">Concluído</option>
+                                    <option value="ativo">Em Andamento</option>
+                                    <option value="pendente">Pendente</option>
+                                </select>
+                            </div>
+                            <div class="filter-control" style="flex: 2;">
+                                <label for="filter-frente-search">Buscar Apartamento</label>
+                                <input type="text" id="filter-frente-search" placeholder="Ex: 1201, 302 (Filtrar por número da unidade)">
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Unidades nesta Frente -->
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-frente-unidades">
+                                <thead>
+                                    <tr>
+                                        <th>Bloco</th>
+                                        <th>Unidade</th>
+                                        <th>Responsável</th>
+                                        <th>Material / Insumo</th>
+                                        <th>Projeção de Conclusão</th>
+                                        <th>Conclusão Real</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-frente-unidades-body">
+                                    <!-- Inserido dinamicamente -->
+                                </tbody>
+                            </table>
+                            <div id="no-units-frente-msg" class="empty-state hidden">
+                                <i class="fa fa-person-circle-check"></i>
+                                <h3>Sem unidades nesta frente</h3>
+                                <p>Todas as unidades cadastradas já foram concluídas ou estão em outras etapas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PÁGINA: CONSUMO DE INSUMOS -->
+                <section id="page-insumos" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-boxes-stacked"></i> Consumo de Insumos por Unidade</h2>
+                            <div class="header-actions">
+                                <button id="btn-export-insumos" class="btn btn-sm btn-outline"><i class="fa fa-file-export"></i> Exportar CSV</button>
+                            </div>
+                        </div>
+                        <div class="card-filters">
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label for="filter-ins-tower">Torre</label>
+                                    <select id="filter-ins-tower">
+                                        <option value="all">Todas</option>
+                                        <option value="Torre 01">Torre 01</option>
+                                        <option value="Torre 02">Torre 02</option>
+                                        <option value="Torre 03">Torre 03</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-ins-frente">Frente de Serviço</label>
+                                    <select id="filter-ins-frente">
+                                        <option value="all">Todas</option>
+                                        <option value="Janela">1. Janela</option>
+                                        <option value="Impermeabilização">2. Impermeabilização</option>
+                                        <option value="Drywall">3. Drywall</option>
+                                        <option value="Piso">4. Piso</option>
+                                        <option value="Rejunte">5. Rejunte</option>
+                                        <option value="Pintura">6. Pintura</option>
+                                        <option value="Limpeza">7. Limpeza</option>
+                                        <option value="Regularização">8. Regularização</option>
+                                        <option value="Piso Laminado">9. Piso Laminado</option>
+                                        <option value="Checklist">10. Checklist</option>
+                                        <option value="VQ">11. VQ</option>
+                                        <option value="VA">12. VA</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-ins-search">Buscar Unidade / Material / Tipo / Obs</label>
+                                    <input type="text" id="filter-ins-search" placeholder="Ex: 1201, Munari, Porcelanato, refazer...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Torre</th>
+                                        <th>Unidade</th>
+                                        <th>Frente</th>
+                                        <th>Data Lançamento</th>
+                                        <th>Responsável</th>
+                                        <th>Material</th>
+                                        <th>Tipo</th>
+                                        <th>Subtipo</th>
+                                        <th>Qtd</th>
+                                        <th>Observação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-insumos-body">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </tbody>
+                            </table>
+                            <div id="no-insumos-msg" class="empty-state hidden">
+                                <i class="fa fa-box-open"></i>
+                                <h3>Nenhum insumo lançado</h3>
+                                <p>Não há lançamentos de materiais correspondentes aos filtros selecionados.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PÁGINA 3: HISTÓRICO DE REPROVAS (VQ/VA) -->
+                <section id="page-reprovas" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-clipboard-question"></i> Histórico Consolidado de Reprovas e Consumo</h2>
+                            <div class="header-actions">
+                                <button id="btn-export-reprovas" class="btn btn-sm btn-outline"><i class="fa fa-file-export"></i> Exportar CSV</button>
+                            </div>
+                        </div>
+                        <div class="card-filters">
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label for="filter-rep-tower">Torre</label>
+                                    <select id="filter-rep-tower">
+                                        <option value="all">Todas</option>
+                                        <option value="Torre 01">Torre 01</option>
+                                        <option value="Torre 02">Torre 02</option>
+                                        <option value="Torre 03">Torre 03</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-rep-status">Status</label>
+                                    <select id="filter-rep-status">
+                                        <option value="all">Todos</option>
+                                        <option value="Pendente">Pendentes</option>
+                                        <option value="Resolvido">Resolvidos</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-rep-search">Buscar Descrição / Material</label>
+                                    <input type="text" id="filter-rep-search" placeholder="Ex: Piso, Ralo, Cerâmica...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Torre</th>
+                                        <th>Unidade</th>
+                                        <th>Serviço</th>
+                                        <th>Local</th>
+                                        <th>Descrição da Falha</th>
+                                        <th>Material Usado/Necessário</th>
+                                        <th>Quantidade</th>
+                                        <th>Responsável</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-reprovas-body">
+                                    <!-- Inserido dinamicamente -->
+                                </tbody>
+                            </table>
+                            <div id="no-reprovas-msg" class="empty-state hidden">
+                                <i class="fa fa-square-check text-success"></i>
+                                <h3>Nenhuma reprova encontrada</h3>
+                                <p>Qualidade 100%! Nenhuma falha registrada com os filtros selecionados.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PÁGINA 4: GERENCIAR USUÁRIOS (ADMIN ONLY) -->
+                <section id="page-usuarios" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-users-gear"></i> Controle de Acesso e Usuários</h2>
+                            <button id="btn-add-user" class="btn btn-primary btn-sm"><i class="fa fa-user-plus"></i> Novo Usuário</button>
+                        </div>
+                        <p class="section-desc">Gerencie quem tem autorização para entrar no aplicativo e seus níveis de acesso.</p>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Completo</th>
+                                        <th>Nome de Usuário (Login)</th>
+                                        <th>Nível de Acesso</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-users-body">
+                                    <!-- Inserido dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PÁGINA 5: CONFIGURAÇÕES DA OBRA (ADMIN ONLY) -->
+                <section id="page-config" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-sliders"></i> Configuração da Estrutura da Obra</h2>
+                        </div>
+                        <p class="section-desc">Edite a estrutura física da obra de forma dinâmica. Lembre-se que alterar a estrutura irá zerar os dados de andares removidos.</p>
+                        
+                        <form id="config-towers-form">
+                            <div class="towers-config-list" id="config-towers-list-root">
+                                <!-- Inserido dinamicamente -->
+                            </div>
+                            <div class="config-actions">
+                                <button type="button" id="btn-add-tower-config" class="btn btn-outline"><i class="fa fa-plus"></i> Adicionar Nova Torre</button>
+                                <button type="submit" class="btn btn-primary"><i class="fa fa-floppy-disk"></i> Salvar Estrutura</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card mt-4 bg-danger-subtle">
+                        <div class="card-header">
+                            <h2 class="text-danger"><i class="fa fa-triangle-exclamation"></i> Zona de Risco Administrativa</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>Ações irreversíveis que impactam toda a base de dados do aplicativo.</p>
+                            <div class="danger-buttons-row">
+                                <button id="btn-danger-reset-all" class="btn btn-danger"><i class="fa fa-trash-can"></i> Reiniciar Obra (Zerar Tudo)</button>
+                                <button id="btn-danger-seed-splendore" class="btn btn-outline text-warning border-warning"><i class="fa fa-database"></i> Restaurar Dados Originais Splendore</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL 1: DETALHES DA UNIDADE (HISTÓRICO COMPLETO) -->
+    <div id="modal-unit-details" class="modal-overlay hidden">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h2 id="modal-unit-title">Torre 01 - Apto 1201</h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="unit-detail-layout">
+                    <!-- Coluna da Esquerda: Status Atual e Resumo -->
+                    <div class="unit-sidebar">
+                        <div class="status-summary-box">
+                            <span class="label">Frente Atual</span>
+                            <div class="front-selector-wrapper">
+                                <select id="modal-unit-active-front-selector">
+                                    <!-- Preenchido via JS -->
+                                </select>
+                            </div>
+                            <span id="modal-unit-status-badge" class="badge">Ativo</span>
+                        </div>
+                        
+                        <!-- Progresso da Unidade -->
+                        <div class="progress-box">
+                            <span class="label">Progresso das Frentes</span>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar-fill" id="modal-unit-progress-bar" style="width: 30%;"></div>
+                            </div>
+                            <span class="progress-text" id="modal-unit-progress-text">3/12 Concluídos</span>
+                        </div>
+
+                        <!-- Detalhe da Obra -->
+                        <div class="info-list">
+                            <div class="info-item">
+                                <span class="info-label"><i class="fa fa-building"></i> Bloco:</span>
+                                <span class="info-value" id="modal-unit-val-tower">Torre 01</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fa fa-layer-group"></i> Pavimento:</span>
+                                <span class="info-value" id="modal-unit-val-floor">12º Andar</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna da Direita: Fluxo das Frentes e Reprovas -->
+                    <div class="unit-tabs-content">
+                        <!-- Abas internas do Modal -->
+                        <div class="modal-tabs">
+                            <button class="modal-tab-btn active" data-tab="modal-tab-workflow">Fluxo de Frentes</button>
+                            <button class="modal-tab-btn" data-tab="modal-tab-reprovas">Histórico Reprovas (<span id="modal-unit-rep-count">0</span>)</button>
+                        </div>
+                        
+                        <!-- Conteúdo da Aba 1: Fluxo de Frentes -->
+                        <div id="modal-tab-workflow" class="modal-tab-panel active">
+                            <div class="workflow-timeline" id="modal-unit-timeline">
+                                <!-- Inserido dinamicamente -->
+                            </div>
+                        </div>
+                        
+                        <!-- Conteúdo da Aba 2: Histórico de Reprovas -->
+                        <div id="modal-tab-reprovas" class="modal-tab-panel">
+                            <div class="modal-reprovas-list" id="modal-unit-reprovas-root">
+                                <!-- Lista de reprovas da unidade -->
+                            </div>
+                            <!-- Botão rápido para lançar reprova (se estiver em VQ ou VA) -->
+                            <button id="modal-btn-add-reprova" class="btn btn-outline btn-block mt-3 hidden">
+                                <i class="fa fa-bug"></i> Registrar Nova Falha / Reprova
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline modal-close">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ATUALIZAR / CONCLUIR FRENTE DE SERVIÇO -->
+    <div id="modal-update-front" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Atualizar Frente: <span id="modal-update-front-name">Piso</span></h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <form id="form-update-front">
+                <input type="hidden" id="update-unit-id">
+                <input type="hidden" id="update-front-name">
+                <div class="modal-body">
+                    <p class="update-sub">Atualizando dados da unidade <strong id="update-unit-display">T1-1201</strong></p>
+                    
+                    <div class="form-group">
+                        <label for="update-resp">Responsável pela Execução</label>
+                        <input type="text" id="update-resp" placeholder="Ex: Ivan, Pedro, Equipe Gesso" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="update-dur-proj">Duração Prevista (Dias)</label>
+                            <input type="number" id="update-dur-proj" value="1" min="1" required>
+                        </div>
+                        <div class="form-group col">
+                            <label for="update-dur-real">Duração Real (Dias)</label>
+                            <input type="number" id="update-dur-real" value="1" min="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="update-data-final"><i class="fa fa-calendar-check text-success"></i> Data de Conclusão Real</label>
+                        <input type="date" id="update-data-final" class="input-glow" required>
+                    </div>
+
+                    <!-- Campos de Materiais Unificados para Lançamento -->
+                    <div class="dynamic-materials-box">
+                        <h4>Insumos Utilizados nesta Unidade</h4>
+                        <div class="form-row">
+                            <div class="form-group col-7">
+                                <label for="update-mat-nome">Material / Insumo</label>
+                                <input type="text" id="update-mat-nome" list="material-suggestions" placeholder="Ex: Piso, Tinta, Drywall">
+                                <datalist id="material-suggestions">
+                                    <option value="Piso">
+                                    <option value="Rejunte">
+                                    <option value="Pintura">
+                                    <option value="Impermeabilização">
+                                    <option value="Regularização">
+                                    <option value="Piso Laminado">
+                                    <option value="Janela">
+                                    <option value="Drywall">
+                                </datalist>
+                            </div>
+                            <div class="form-group col-5">
+                                <label for="update-mat-qtd">Quantidade</label>
+                                <input type="text" id="update-mat-qtd" placeholder="Ex: 24 caixas, 10m">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="update-mat-tipo">Tipo de Material</label>
+                                <input type="text" id="update-mat-tipo" placeholder="Ex: Porcelanato, Suvinil Fosco">
+                            </div>
+                            <div class="form-group col">
+                                <label for="update-mat-subtipo">Subtipo / Formato</label>
+                                <input type="text" id="update-mat-subtipo" placeholder="Ex: Munari Marfim, 60x60">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="update-mat-obs">Observação / Comentários</label>
+                            <textarea id="update-mat-obs" rows="2" placeholder="Ex: Tivemos que refazer os apartamentos. Cozinha revestida."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="button" id="btn-save-progress" class="btn btn-outline" style="border-color: var(--primary-color); color: var(--primary-color);"><i class="fa fa-floppy-disk"></i> Salvar Alterações</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-circle-check"></i> Concluir Frente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CADASTRAR REPROVA (VQ / VA) -->
+    <div id="modal-add-reprova" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Registrar Reprova: <span id="modal-rep-unit-title">T1-1201</span></h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <form id="form-add-reprova">
+                <input type="hidden" id="rep-unit-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="rep-local">Cômodo / Local da Falha</label>
+                        <select id="rep-local" required>
+                            <option value="">Selecione...</option>
+                            <option value="Cozinha">Cozinha</option>
+                            <option value="Área de Serviço">Área de Serviço</option>
+                            <option value="Sala de Estar">Sala de Estar</option>
+                            <option value="Banheiro 1">Banheiro 1</option>
+                            <option value="Banheiro 2">Banheiro 2</option>
+                            <option value="Quarto 1">Quarto 1</option>
+                            <option value="Quarto 2">Quarto 2</option>
+                            <option value="Sacada/Varanda">Sacada/Varanda</option>
+                            <option value="Corredor/Hall">Corredor/Hall</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rep-desc">Descrição Detalhada do Problema</label>
+                        <textarea id="rep-desc" rows="3" placeholder="Ex: Piso oco na área do ralo, pintura descascando..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rep-resp">Responsável pela Correção</label>
+                        <input type="text" id="rep-resp" placeholder="Ex: Dilaércio, Aguinaldo, Ivan" required>
+                    </div>
+
+                    <!-- Campos de materiais gastos para corrigir a reprova -->
+                    <div class="reprova-materials-section">
+                        <h4>Insumos Necessários / Gastos para Correção</h4>
+                        <div class="form-row">
+                            <div class="form-group col-7">
+                                <label for="rep-mat-nome">Material</label>
+                                <input type="text" id="rep-mat-nome" list="rep-material-suggestions" placeholder="Ex: Piso, Porcelanato, Argamassa">
+                                <datalist id="rep-material-suggestions">
+                                    <option value="Piso Cerâmico">
+                                    <option value="Azulejo">
+                                    <option value="Porcelanato">
+                                    <option value="Argamassa">
+                                    <option value="Rejunte">
+                                    <option value="Massa Corrida">
+                                    <option value="Piso Laminado">
+                                    <option value="Rodapé">
+                                    <option value="Gesso Drywall">
+                                </datalist>
+                            </div>
+                            <div class="filter-group col-5" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="rep-mat-qtd">Quantidade</label>
+                                <input type="text" id="rep-mat-qtd" placeholder="Ex: 2 caixas, 1 saco" style="background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: var(--border-radius); color: var(--text-primary); outline: none;">
+                            </div>
+                        </div>
+
+                        <div class="form-row" id="rep-mat-subtypes-row">
+                            <div class="form-group col">
+                                <label for="rep-mat-tipo">Tipo</label>
+                                <input type="text" id="rep-mat-tipo" placeholder="Ex: Ceramica Elizabeth, Suvinil">
+                            </div>
+                            <div class="form-group col">
+                                <label for="rep-mat-subtipo">Subtipo / Formato</label>
+                                <input type="text" id="rep-mat-subtipo" placeholder="Ex: 60x60, Cor Branca">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="fa fa-triangle-exclamation"></i> Registrar Reprova</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: CADASTRAR/EDITAR USUÁRIO -->
+    <div id="modal-add-user" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-user-title-action">Novo Usuário</h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <form id="form-add-user">
+                <input type="hidden" id="user-edit-mode" value="false">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="user-fullname">Nome Completo</label>
+                        <input type="text" id="user-fullname" placeholder="Ex: João da Silva" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-username">Nome de Usuário (Login)</label>
+                        <input type="text" id="user-username" placeholder="Ex: joao.mrv" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-password">Senha</label>
+                        <input type="password" id="user-password" placeholder="Mínimo 4 caracteres" required autocomplete="new-password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-role">Nível de Permissão</label>
+                        <select id="user-role" required>
+                            <option value="fiscal">Fiscal / Apontador</option>
+                            <option value="admin">Administrador (Engenheiro)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-user-submit">Salvar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: GERENCIAR COLABORADORES DA FRENTE -->
+    <div id="modal-manage-colaboradores" class="modal-overlay hidden">
+        <div class="modal-card" style="width: 580px; max-width: 95%;">
+            <div class="modal-header">
+                <h2><i class="fa fa-users text-success"></i> Colaboradores - <span id="colab-modal-frente-name">Frente</span></h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                
+                <!-- Lista de Colaboradores Cadastrados -->
+                <div class="colab-list-section">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Colaboradores Ativos nesta Frente</h3>
+                    <div style="border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-secondary); overflow: hidden; margin-bottom: 1.5rem;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
+                                    <th style="padding: 0.5rem 0.75rem;">Nome</th>
+                                    <th style="padding: 0.5rem 0.75rem;">Empresa</th>
+                                    <th style="padding: 0.5rem 0.75rem;">Produção Média</th>
+                                    <th style="padding: 0.5rem 0.75rem; text-align: center; width: 60px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-colab-body">
+                                <!-- Preenchido dinamicamente via JS -->
+                            </tbody>
+                        </table>
+                        <div id="colab-empty-msg" class="text-muted" style="padding: 1rem; text-align: center; font-style: italic;">
+                            Nenhum colaborador cadastrado. A capacidade produtiva padrão desta frente será usada.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulário para Adicionar Novo Colaborador -->
+                <form id="form-add-colab" style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Adicionar Novo Colaborador</h3>
+                    
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="colab-nome">Nome do Colaborador</label>
+                        <input type="text" id="colab-nome" placeholder="Ex: Pintor José" required class="input-glow" list="datalist-global-colabs">
+                        <datalist id="datalist-global-colabs"></datalist>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="colab-empresa">Empresa / Terceirizada</label>
+                        <input type="text" id="colab-empresa" placeholder="Ex: NR Pinturas" required class="input-glow">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="colab-produtividade">Produção Média</label>
+                            <input type="number" id="colab-produtividade" placeholder="Ex: 6" min="0.001" step="any" required class="input-glow">
+                        </div>
+                        <div class="form-group" style="flex: 1.2; margin-bottom: 0;">
+                            <label for="colab-periodo">Período de Produção</label>
+                            <select id="colab-periodo" class="input-glow" required>
+                                <option value="dia">Apartamentos / Dia</option>
+                                <option value="semana">Apartamentos / Semana (5 dias)</option>
+                                <option value="mes" selected>Apartamentos / Mês (30 dias)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-user-plus"></i> Adicionar Colaborador</button>
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-outline modal-close">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Inicialização da SPA -->
+    <script src="src/data/initialData.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
