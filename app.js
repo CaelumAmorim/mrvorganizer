@@ -547,7 +547,8 @@ function getRoleLabel(role) {
         'gestor': 'Gestor',
         'controle': 'Controle de Obra',
         'diretor': 'Diretor',
-        'fiscal': 'Fiscal / Apontador'
+        'analista': 'Analista de Engenharia',
+        'fiscal': 'Auxiliar de Engenharia'
     };
     return labels[role] || role;
 }
@@ -570,6 +571,13 @@ function loginSuccess(user) {
         userRoleIcon.className = 'fa fa-user';
     }
 
+    const canManagePermissions = user.role === 'admin' || user.role === 'engenheiro' || user.role === 'gestor' || user.role === 'diretor';
+    if (canManagePermissions) {
+        document.querySelectorAll('.permissions-allowed').forEach(el => el.classList.remove('hidden'));
+    } else {
+        document.querySelectorAll('.permissions-allowed').forEach(el => el.classList.add('hidden'));
+    }
+
     // Default to first page
     navLinks.forEach(l => l.classList.remove('active'));
     document.querySelector('[data-target="page-mapa"]').classList.add('active');
@@ -579,7 +587,12 @@ function loginSuccess(user) {
 // Page Router
 function navigateToPage(pageId) {
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro');
+    const canManagePermissions = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor' || currentUser.role === 'diretor');
+
     if ((pageId === 'page-usuarios' || pageId === 'page-config') && !isPowerUser) {
+        pageId = 'page-mapa';
+    }
+    if (pageId === 'page-permissoes' && !canManagePermissions) {
         pageId = 'page-mapa';
     }
 
@@ -609,6 +622,9 @@ function navigateToPage(pageId) {
     } else if (pageId === 'page-config') {
         pageTitle.textContent = "Estrutura da Obra";
         renderConfigTowers();
+    } else if (pageId === 'page-permissoes') {
+        pageTitle.textContent = "Permissões de Acesso";
+        initPermissoesPage();
     }
 }
 
@@ -1106,19 +1122,23 @@ function renderFrenteDetails() {
         let actionBtn = "";
         const userRole = currentUser ? currentUser.role : 'fiscal';
         const isReadOnly = userRole === 'diretor';
-        const canReopen = userRole === 'admin' || userRole === 'engenheiro' || userRole === 'gestor' || userRole === 'controle';
+        const allowed = currentUser ? currentUser.allowedFronts : null;
+        const isFrontAllowed = !allowed || allowed.length === 0 || allowed.includes(activeFrente);
+        const canReopen = (userRole === 'admin' || userRole === 'engenheiro' || userRole === 'gestor' || userRole === 'controle') && isFrontAllowed;
 
         if (isDone) {
             if (canReopen) {
                 actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" style="color: var(--status-reprovado); border-color: var(--status-reprovado);"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
             } else {
-                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed; color: var(--text-secondary); border-color: var(--border-color);"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed; color: var(--text-secondary); border-color: var(--border-color);" title="Sem permissão para esta frente de serviço"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
             }
         } else if (isActive) {
-            if (!isReadOnly) {
+            if (!isReadOnly && isFrontAllowed) {
                 actionBtn = `<button class="btn btn-xs btn-primary btn-unit-update" data-id="${u.id}"><i class="fa fa-pen"></i> Alimentar</button>`;
+            } else if (isReadOnly) {
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;" title="Visualizar apenas (Diretor)"><i class="fa fa-eye"></i> Visualizar</button>`;
             } else {
-                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;"><i class="fa fa-eye"></i> Visualizar</button>`;
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;" title="Sem permissão para esta frente de serviço"><i class="fa fa-ban"></i> Bloqueado</button>`;
             }
         } else {
             actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;"><i class="fa fa-pen"></i> Alimentar</button>`;
@@ -1145,7 +1165,7 @@ function renderFrenteDetails() {
         tr.querySelector('.btn-unit-view').addEventListener('click', () => openUnitDetailsModal(u.id));
         if (isDone && canReopen) {
             tr.querySelector('.btn-unit-reopen').addEventListener('click', () => handleReopenFront(u.id, activeFrente));
-        } else if (isActive && !isReadOnly) {
+        } else if (isActive && !isReadOnly && isFrontAllowed) {
             tr.querySelector('.btn-unit-update').addEventListener('click', () => openUpdateFrontModal(u.id, activeFrente));
         }
 
@@ -1768,6 +1788,16 @@ function convertYMDToDMY(ymd) {
 }
 
 function openUpdateFrontModal(unitId, frenteName) {
+    const userRole = currentUser ? currentUser.role : 'fiscal';
+    const isReadOnly = userRole === 'diretor';
+    const allowed = currentUser ? currentUser.allowedFronts : null;
+    const isAllowed = !allowed || allowed.length === 0 || allowed.includes(frenteName);
+
+    if (isReadOnly || !isAllowed) {
+        alert("Você não tem permissão para alterar esta frente de serviço.");
+        return;
+    }
+
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
 
@@ -1876,6 +1906,16 @@ function handleUpdateFrontSubmit(e) {
 }
 
 async function handleReopenFront(unitId, frenteName) {
+    const userRole = currentUser ? currentUser.role : 'fiscal';
+    const canReopen = userRole === 'admin' || userRole === 'engenheiro' || userRole === 'gestor' || userRole === 'controle';
+    const allowed = currentUser ? currentUser.allowedFronts : null;
+    const isAllowed = !allowed || allowed.length === 0 || allowed.includes(frenteName);
+
+    if (!canReopen || !isAllowed) {
+        alert("Você não tem permissão para desfazer a conclusão desta frente de serviço.");
+        return;
+    }
+
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
     
@@ -2311,4 +2351,89 @@ function updateDatalistGlobalColabs() {
         opt.textContent = c.empresa; // Mostrar empresa
         dl.appendChild(opt);
     });
+}
+
+// Inicializar aba de permissões de acesso por frente de serviço
+function initPermissoesPage() {
+    const userSelect = document.getElementById('permissions-user-select');
+    const gridWrapper = document.getElementById('permissions-grid-wrapper');
+    const checkboxesContainer = document.getElementById('permissions-checkboxes-container');
+    const btnSave = document.getElementById('btn-save-permissions');
+
+    if (!userSelect || !gridWrapper || !checkboxesContainer || !btnSave) return;
+
+    // Populate user selector (exclude system admin rafael.samorim to prevent self-locking)
+    userSelect.innerHTML = '<option value="">Escolha um usuário...</option>';
+    projectState.users.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.username;
+        opt.textContent = `${u.name} - ${getRoleLabel(u.role)} (${u.username})`;
+        userSelect.appendChild(opt);
+    });
+
+    // Reset grid
+    gridWrapper.classList.add('hidden');
+    checkboxesContainer.innerHTML = '';
+
+    // Handle user change
+    userSelect.onchange = () => {
+        const username = userSelect.value;
+        if (!username) {
+            gridWrapper.classList.add('hidden');
+            return;
+        }
+
+        const targetUser = projectState.users.find(usr => usr.username === username);
+        if (!targetUser) return;
+
+        gridWrapper.classList.remove('hidden');
+        checkboxesContainer.innerHTML = '';
+
+        const allowed = targetUser.allowedFronts || [];
+        const isSystemAdmin = targetUser.username === 'rafael.samorim';
+
+        FRENTES_SEQUENCIA.forEach(f => {
+            const isChecked = allowed.includes(f) || isSystemAdmin;
+            
+            const card = document.createElement('div');
+            card.className = "permissions-checkbox-card";
+            card.style.cssText = "background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s;";
+            
+            card.innerHTML = `
+                <input type="checkbox" id="perm-front-${f}" value="${f}" ${isChecked ? 'checked' : ''} ${isSystemAdmin ? 'disabled' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="perm-front-${f}" style="margin: 0; cursor: pointer; font-weight: 500; color: var(--text-primary);">${f}</label>
+            `;
+
+            checkboxesContainer.appendChild(card);
+        });
+    };
+
+    // Handle Save
+    btnSave.onclick = async () => {
+        const username = userSelect.value;
+        if (!username) {
+            alert("Selecione um usuário para salvar as permissões.");
+            return;
+        }
+
+        const targetUser = projectState.users.find(usr => usr.username === username);
+        if (!targetUser) return;
+
+        if (targetUser.username === 'rafael.samorim') {
+            alert("As permissões do desenvolvedor do sistema não podem ser alteradas.");
+            return;
+        }
+
+        const checkedFrentes = [];
+        checkboxesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if (cb.checked) {
+                checkedFrentes.push(cb.value);
+            }
+        });
+
+        // Save to user object
+        targetUser.allowedFronts = checkedFrentes;
+        await saveState();
+        alert(`Permissões salvas com sucesso para o usuário ${targetUser.name}!`);
+    };
 }

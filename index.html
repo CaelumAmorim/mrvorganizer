@@ -267,6 +267,11 @@
                             <i class="fa fa-clipboard-question"></i> <span>Histórico de Reprovas</span>
                         </a>
                     </li>
+                    <li class="permissions-allowed">
+                        <a href="#" class="nav-link" data-target="page-permissoes">
+                            <i class="fa fa-user-lock"></i> <span>Permissões</span>
+                        </a>
+                    </li>
                     <li class="admin-only">
                         <a href="#" class="nav-link" data-target="page-usuarios">
                             <i class="fa fa-users-gear"></i> <span>Gerenciar Usuários</span>
@@ -663,6 +668,37 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- PÁGINA 6: PERMISSÕES DE ACESSO POR FRENTE -->
+                <section id="page-permissoes" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-user-lock text-success"></i> Permissões de Acesso por Frente</h2>
+                            <button id="btn-save-permissions" class="btn btn-primary btn-sm"><i class="fa fa-floppy-disk"></i> Salvar Permissões</button>
+                        </div>
+                        <p class="section-desc">Selecione um usuário para configurar quais frentes de serviço ele tem permissão de alterar.</p>
+                        
+                        <div class="form-group" style="max-width: 400px; margin-bottom: 2rem;">
+                            <label for="permissions-user-select"><i class="fa fa-user"></i> Selecionar Usuário</label>
+                            <select id="permissions-user-select" class="input-glow" style="width: 100%;">
+                                <option value="">Escolha um usuário...</option>
+                                <!-- Preenchido dinamicamente via JS -->
+                            </select>
+                        </div>
+
+                        <div id="permissions-grid-wrapper" class="hidden">
+                            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Frentes de Serviço Autorizadas</h3>
+                            <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.85rem;">
+                                Marque as frentes de serviço que este usuário pode alimentar ou desfazer a conclusão. 
+                                Se nenhuma estiver marcada, o usuário terá permissão para alterar **todas** as frentes.
+                            </p>
+                            
+                            <div class="checkbox-grid" id="permissions-checkboxes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+                                <!-- Checkboxes geradas dinamicamente via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 
             </div>
         </main>
@@ -936,7 +972,8 @@
                     <div class="form-group">
                         <label for="user-role">Nível de Permissão</label>
                         <select id="user-role" required>
-                            <option value="fiscal">Fiscal / Apontador</option>
+                            <option value="fiscal">Auxiliar de Engenharia</option>
+                            <option value="analista">Analista de Engenharia</option>
                             <option value="controle">Controle de Obra</option>
                             <option value="gestor">Gestor</option>
                             <option value="diretor">Diretor (Visualização)</option>
