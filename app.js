@@ -540,6 +540,18 @@ function setupEventListeners() {
 }
 
 // Login Success Routing
+function getRoleLabel(role) {
+    const labels = {
+        'admin': 'Administrador',
+        'engenheiro': 'Engenheiro',
+        'gestor': 'Gestor',
+        'controle': 'Controle de Obra',
+        'diretor': 'Diretor',
+        'fiscal': 'Fiscal / Apontador'
+    };
+    return labels[role] || role;
+}
+
 function loginSuccess(user) {
     currentUser = user;
     sessionStorage.setItem('mrv_current_user', JSON.stringify(currentUser));
@@ -548,9 +560,9 @@ function loginSuccess(user) {
     appContainer.classList.remove('hidden');
 
     userDisplayName.textContent = user.name;
-    userDisplayRole.textContent = user.role === 'admin' ? 'Administrador' : 'Fiscal';
+    userDisplayRole.textContent = getRoleLabel(user.role);
     
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'engenheiro') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
         userRoleIcon.className = 'fa fa-user-shield';
     } else {
@@ -566,6 +578,11 @@ function loginSuccess(user) {
 
 // Page Router
 function navigateToPage(pageId) {
+    const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro');
+    if ((pageId === 'page-usuarios' || pageId === 'page-config') && !isPowerUser) {
+        pageId = 'page-mapa';
+    }
+
     activePage = pageId;
     pageSections.forEach(sec => sec.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
@@ -1087,10 +1104,22 @@ function renderFrenteDetails() {
 
         // Ações condicionais
         let actionBtn = "";
+        const userRole = currentUser ? currentUser.role : 'fiscal';
+        const isReadOnly = userRole === 'diretor';
+        const canReopen = userRole === 'admin' || userRole === 'engenheiro' || userRole === 'gestor' || userRole === 'controle';
+
         if (isDone) {
-            actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" style="color: var(--status-reprovado); border-color: var(--status-reprovado);"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
+            if (canReopen) {
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" style="color: var(--status-reprovado); border-color: var(--status-reprovado);"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
+            } else {
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed; color: var(--text-secondary); border-color: var(--border-color);"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
+            }
         } else if (isActive) {
-            actionBtn = `<button class="btn btn-xs btn-primary btn-unit-update" data-id="${u.id}"><i class="fa fa-pen"></i> Alimentar</button>`;
+            if (!isReadOnly) {
+                actionBtn = `<button class="btn btn-xs btn-primary btn-unit-update" data-id="${u.id}"><i class="fa fa-pen"></i> Alimentar</button>`;
+            } else {
+                actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;"><i class="fa fa-eye"></i> Visualizar</button>`;
+            }
         } else {
             actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;"><i class="fa fa-pen"></i> Alimentar</button>`;
         }
@@ -1114,9 +1143,9 @@ function renderFrenteDetails() {
         `;
 
         tr.querySelector('.btn-unit-view').addEventListener('click', () => openUnitDetailsModal(u.id));
-        if (isDone) {
+        if (isDone && canReopen) {
             tr.querySelector('.btn-unit-reopen').addEventListener('click', () => handleReopenFront(u.id, activeFrente));
-        } else if (isActive) {
+        } else if (isActive && !isReadOnly) {
             tr.querySelector('.btn-unit-update').addEventListener('click', () => openUpdateFrontModal(u.id, activeFrente));
         }
 
@@ -1295,10 +1324,19 @@ function renderUsersList() {
     projectState.users.forEach(u => {
         const tr = document.createElement('tr');
         
+        let badgeClass = "bg-blue";
+        if (u.role === 'admin' || u.role === 'engenheiro') {
+            badgeClass = "bg-green";
+        } else if (u.role === 'diretor') {
+            badgeClass = "bg-purple";
+        } else if (u.role === 'gestor' || u.role === 'controle') {
+            badgeClass = "bg-amber";
+        }
+        
         tr.innerHTML = `
             <td><strong>${u.name}</strong></td>
             <td><code>${u.username}</code></td>
-            <td><span class="badge ${u.role === 'admin' ? 'bg-green' : 'bg-blue'}">${u.role === 'admin' ? 'Administrador' : 'Fiscal'}</span></td>
+            <td><span class="badge ${badgeClass}">${getRoleLabel(u.role)}</span></td>
             <td>
                 ${u.username === 'rafael.samorim' ? '<span class="text-muted">Sistema</span>' : `
                     <div style="display: flex; gap: 8px;">
