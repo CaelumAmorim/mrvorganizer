@@ -16,48 +16,114 @@ let globalCollaborators = [];
 let activeModalMaterials = [];
 
 const FRENTES_SEQUENCIA = [
-    "Janela", 
-    "Impermeabilização", 
-    "Drywall", 
-    "Piso", 
+    "REGULARIZAÇÃO DE PAREDE (gesso/argamassa)",
+    "PRUMADA E DISTR. ESGOTO",
+    "PRUMADA E DISTR. ÁGUA FRIA",
+    "CHURRASQUEIRA",
+    "EXAUSTÃO CHURRASQUEIRA",
+    "DRYWALL / FORRO GESSO",
+    "Cavaletes",
+    "DISJUNTORES E QDC",
+    "PRUMADA DE INCÊNDIO / HIDRANTE",
+    "JANELAS",
+    "IMPERMEABILIZAÇÃO",
+    "Instalação QM",
+    "Passagem dos cabos",
     "Rejunte",
-    "Pintura", 
-    "Limpeza", 
-    "Regularização", 
-    "Piso Laminado", 
+    "PISO CERAMICO / AZULEJO",
+    "PISO HALL",
+    "PORTA CORTA FOGO (portal)",
+    "PORTA DE SACADA",
+    "PINTURA 1ª FASE",
+    "PINTURA 1ª FASE HALL",
+    "LIMPEZA GROSSA",
+    "MÓDULOS ELÉTRICOS",
+    "LOUÇAS E BANCADAS",
+    "PRUMADA DE GÁS",
+    "GÁS INTERNO APTO",
+    "REGULARIZAÇÃO PISO LAMINADO",
+    "PISO LAMINADO",
+    "PORTA PRONTA MADEIRA",
+    "TORNEIRAS E METAIS",
     "Checklist",
-    "VQ", 
+    "Limpeza Fina",
+    "VQ",
+    "Passada de Pano",
     "VA"
 ];
 
 const FRENTES_DESCRICOES = {
-    "Janela": "Instalação e alinhamento de esquadrias e vidros externos.",
-    "Impermeabilização": "Aplicação de manta asfáltica e impermeabilizantes em áreas frias (banheiros, sacadas).",
-    "Drywall": "Montagem de divisórias internas de gesso acartonado e paredes acústicas.",
-    "Piso": "Assentamento de revestimentos cerâmicos, azulejos e porcelanatos nas paredes e pisos.",
-    "Rejunte": "Aplicação de rejunte técnico entre as juntas de pisos e azulejos.",
-    "Pintura": "Aplicação de selador, massa corrida e pintura acrílica nas paredes e tetos.",
-    "Limpeza": "Limpeza grossa e fina para remoção de resíduos de obra de todas as superfícies.",
-    "Regularização": "Execução de contrapiso e regularização de base para assentamento do piso final.",
-    "Piso Laminado": "Colocação do piso laminado de madeira e fixação de rodapés nas salas e quartos.",
-    "Checklist": "Vistoria interna prévia para identificação e correção de pequenas pendências estéticas.",
-    "VQ": "Vistoria da Qualidade interna. Qualquer item em desconformidade gera uma reprova com consumo de insumo.",
-    "VA": "Vistoria de Entrega do Apartamento ao cliente. Registra os retoques finais requisitados pelo comprador."
+    "REGULARIZAÇÃO DE PAREDE (gesso/argamassa)": "Regularização de superfícies de alvenaria com gesso ou argamassa.",
+    "PRUMADA E DISTR. ESGOTO": "Instalação da prumada vertical e tubulação de distribuição de esgoto.",
+    "PRUMADA E DISTR. ÁGUA FRIA": "Instalação da prumada vertical e tubulação de distribuição de água fria.",
+    "CHURRASQUEIRA": "Montagem ou execução da churrasqueira na varanda/área gourmet.",
+    "EXAUSTÃO CHURRASQUEIRA": "Instalação dos dutos e sistema de exaustão da churrasqueira.",
+    "DRYWALL / FORRO GESSO": "Montagem de paredes em drywall e forros de gesso.",
+    "Cavaletes": "Instalação e conexões dos cavaletes de medição de água individualizada.",
+    "DISJUNTORES E QDC": "Montagem dos disjuntores no Quadro de Distribuição de Carga geral.",
+    "PRUMADA DE INCÊNDIO / HIDRANTE": "Montagem da rede de incêndio, prumada e conexões para hidrantes.",
+    "JANELAS": "Fixação de contra-marcos e instalação de esquadrias e vidros das janelas.",
+    "IMPERMEABILIZAÇÃO": "Aplicação de impermeabilizante nas áreas úmidas (banheiro, sacada).",
+    "Instalação QM": "Montagem do Quadro de Medição (QM) de energia do apartamento.",
+    "Passagem dos cabos": "Enfiamento dos cabos elétricos pelos conduítes de distribuição.",
+    "Rejunte": "Aplicação de rejunte técnico nas juntas de pisos e revestimentos cerâmicos.",
+    "PISO CERAMICO / AZULEJO": "Assentamento de cerâmicas e azulejos nas paredes e pisos das áreas frias.",
+    "PISO HALL": "Instalação e acabamento do piso cerâmico no hall comum dos andares.",
+    "PORTA CORTA FOGO (portal)": "Instalação do portal e dobradiças da porta corta-fogo de acesso.",
+    "PORTA DE SACADA": "Instalação de esquadrias e folhas de vidro da porta da sacada.",
+    "PINTURA 1ª FASE": "Preparação com selador, lixamento e primeira demão de massa corrida/tinta.",
+    "PINTURA 1ª FASE HALL": "Preparação e primeira demão de pintura nas paredes do hall comum.",
+    "LIMPEZA GROSSA": "Limpeza pós-obra pesada para remoção de resíduos e excessos de materiais.",
+    "MÓDULOS ELÉTRICOS": "Instalação final de interruptores, tomadas e espelhos de acabamento.",
+    "LOUÇAS E BANCADAS": "Instalação de bancadas de pedra, cubas, vasos sanitários e tanques.",
+    "PRUMADA DE GÁS": "Instalação da prumada de alimentação geral de gás do bloco.",
+    "GÁS INTERNO APTO": "Passagem e conexão da rede interna de gás para fogão/aquecedor.",
+    "REGULARIZAÇÃO PISO LAMINADO": "Execução e nivelamento do contrapiso para receber o piso laminado.",
+    "PISO LAMINADO": "Instalação do piso laminado de madeira e fixação de rodapés nas salas/quartos.",
+    "PORTA PRONTA MADEIRA": "Instalação dos kits de porta pronta de madeira com fechaduras e dobradiças.",
+    "TORNEIRAS E METAIS": "Instalação de misturadores, torneiras, chuveiros e acessórios metálicos.",
+    "Checklist": "Vistoria prévia da equipe para saneamento de pequenas pendências.",
+    "Limpeza Fina": "Limpeza fina, polimento e higienização detalhada de todo o apartamento.",
+    "VQ": "Vistoria da Qualidade interna. Qualquer item reprovado gera pendência no histórico.",
+    "Passada de Pano": "Limpeza leve final de piso e superfícies para recebimento do cliente.",
+    "VA": "Vistoria de Entrega do Apartamento ao cliente final com registro de pendências."
 };
 
 // Colors associated with each front
 const FRENTES_CORES = {
-    "Janela": "#3b82f6",
-    "Impermeabilização": "#06b6d4",
-    "Drywall": "#6366f1",
-    "Piso": "#a855f7",
-    "Rejunte": "#ec4899",
-    "Pintura": "#f43f5e",
-    "Limpeza": "#10b981",
-    "Regularização": "#f97316",
-    "Piso Laminado": "#84cc16",
-    "Checklist": "#059669",
+    "REGULARIZAÇÃO DE PAREDE (gesso/argamassa)": "#475569",
+    "PRUMADA E DISTR. ESGOTO": "#0284c7",
+    "PRUMADA E DISTR. ÁGUA FRIA": "#0369a1",
+    "CHURRASQUEIRA": "#b45309",
+    "EXAUSTÃO CHURRASQUEIRA": "#78350f",
+    "DRYWALL / FORRO GESSO": "#6366f1",
+    "Cavaletes": "#0d9488",
+    "DISJUNTORES E QDC": "#4f46e5",
+    "PRUMADA DE INCÊNDIO / HIDRANTE": "#dc2626",
+    "JANELAS": "#2563eb",
+    "IMPERMEABILIZAÇÃO": "#0891b2",
+    "Instalação QM": "#3b82f6",
+    "Passagem dos cabos": "#818cf8",
+    "Rejunte": "#db2777",
+    "PISO CERAMICO / AZULEJO": "#c084fc",
+    "PISO HALL": "#a855f7",
+    "PORTA CORTA FOGO (portal)": "#991b1b",
+    "PORTA DE SACADA": "#1d4ed8",
+    "PINTURA 1ª FASE": "#f43f5e",
+    "PINTURA 1ª FASE HALL": "#e11d48",
+    "LIMPEZA GROSSA": "#10b981",
+    "MÓDULOS ELÉTRICOS": "#f59e0b",
+    "LOUÇAS E BANCADAS": "#14b8a6",
+    "PRUMADA DE GÁS": "#059669",
+    "GÁS INTERNO APTO": "#047857",
+    "REGULARIZAÇÃO PISO LAMINADO": "#ea580c",
+    "PISO LAMINADO": "#ca8a04",
+    "PORTA PRONTA MADEIRA": "#854d0e",
+    "TORNEIRAS E METAIS": "#0891b2",
+    "Checklist": "#0d9488",
+    "Limpeza Fina": "#06b6d4",
     "VQ": "#eab308",
+    "Passada de Pano": "#10b981",
     "VA": "#d97706",
     "Concluido": "#00c853"
 };
@@ -114,6 +180,7 @@ async function checkDatabaseConnection() {
         return;
     }
 
+    let loaded = false;
     try {
         dbModeIndicator.textContent = "Verificando servidor...";
         const response = await fetch('/api/project?name=' + encodeURIComponent(activeProjectName));
@@ -123,34 +190,37 @@ async function checkDatabaseConnection() {
             syncMode = 'api';
             updateConnectionBadge(true);
             dbModeIndicator.textContent = `Conectado: ${projectState.name || activeProjectName}`;
-            await loadGlobalCollaborators();
-            return;
+            loaded = true;
         }
     } catch (e) {
         console.log("No backend detected, using local browser database.");
     }
     
-    // Fallback to localStorage
-    syncMode = 'local';
-    updateConnectionBadge(false);
-    dbModeIndicator.textContent = "Navegador Offline";
-    
-    const localKey = 'mrv_project_state_' + activeProjectName;
-    const localData = localStorage.getItem(localKey);
-    if (localData) {
-        try {
-            const parsed = JSON.parse(localData);
-            projectState = parsed;
-        } catch (e) {
-            console.error("Error parsing local state, loading seed data", e);
+    if (!loaded) {
+        // Fallback to localStorage
+        syncMode = 'local';
+        updateConnectionBadge(false);
+        dbModeIndicator.textContent = "Navegador Offline";
+        
+        const localKey = 'mrv_project_state_' + activeProjectName;
+        const localData = localStorage.getItem(localKey);
+        if (localData) {
+            try {
+                const parsed = JSON.parse(localData);
+                projectState = parsed;
+            } catch (e) {
+                console.error("Error parsing local state, loading seed data", e);
+                await loadSeedData();
+            }
+        } else {
             await loadSeedData();
         }
-    } else {
-        await loadSeedData();
     }
 
-    // Ensure frentesConfig and its properties are present in state
+    // Ensure state indices and frentes config are fully migrated and loaded
     if (projectState) {
+        await migrateUnitIndices();
+
         if (!projectState.frentesConfig) {
             projectState.frentesConfig = {};
         }
@@ -168,6 +238,97 @@ async function checkDatabaseConnection() {
     }
 
     await loadGlobalCollaborators();
+}
+
+// Migrate old unit indices and frontsData keys to match the new 34 fronts sequence
+async function migrateUnitIndices() {
+    if (!projectState || !projectState.units) return;
+    
+    // Check if migration has already run for this state
+    if (projectState.frentesMigrationRun) return;
+    
+    console.log("Running service fronts index migration...");
+    
+    const OLD_FRENTES = [
+        "Janela", 
+        "Impermeabilização", 
+        "Drywall", 
+        "Piso", 
+        "Rejunte",
+        "Pintura", 
+        "Limpeza", 
+        "Regularização", 
+        "Piso Laminado", 
+        "Checklist",
+        "VQ", 
+        "VA"
+    ];
+    
+    const OLD_TO_NEW_MAP = {
+        "Janela": "JANELAS",
+        "Impermeabilização": "IMPERMEABILIZAÇÃO",
+        "Drywall": "DRYWALL / FORRO GESSO",
+        "Piso": "PISO CERAMICO / AZULEJO",
+        "Rejunte": "Rejunte",
+        "Pintura": "PINTURA 1ª FASE",
+        "Limpeza": "LIMPEZA GROSSA",
+        "Regularização": "REGULARIZAÇÃO PISO LAMINADO",
+        "Piso Laminado": "PISO LAMINADO",
+        "Checklist": "Checklist",
+        "VQ": "VQ",
+        "VA": "VA"
+    };
+
+    projectState.units.forEach(u => {
+        // 1. Migrate frontsData keys
+        if (u.frontsData) {
+            const newFrontsData = {};
+            
+            // Initialize all new fronts as incomplete
+            FRENTES_SEQUENCIA.forEach(f => {
+                newFrontsData[f] = { concluido: false };
+            });
+            
+            // Copy old data into the new keys
+            Object.keys(u.frontsData).forEach(oldKey => {
+                const newKey = OLD_TO_NEW_MAP[oldKey] || oldKey;
+                if (FRENTES_SEQUENCIA.includes(newKey)) {
+                    newFrontsData[newKey] = u.frontsData[oldKey];
+                }
+            });
+            
+            u.frontsData = newFrontsData;
+        }
+
+        // 2. Migrate activeFrontIndex
+        const oldIndex = u.activeFrontIndex;
+        
+        let completedCount = 0;
+        if (u.frontsData) {
+            Object.values(u.frontsData).forEach(fd => {
+                if (fd && fd.concluido) completedCount++;
+            });
+        }
+        
+        if (completedCount === 0 && oldIndex === 0) {
+            // No progress at all, start at the new sequence index 0
+            u.activeFrontIndex = 0;
+        } else if (oldIndex === 12) {
+            u.activeFrontIndex = FRENTES_SEQUENCIA.length;
+        } else if (oldIndex >= 0 && oldIndex < 12) {
+            const oldName = OLD_FRENTES[oldIndex];
+            const newName = OLD_TO_NEW_MAP[oldName];
+            const newIndex = FRENTES_SEQUENCIA.indexOf(newName);
+            if (newIndex !== -1) {
+                u.activeFrontIndex = newIndex;
+            } else {
+                u.activeFrontIndex = 0;
+            }
+        }
+    });
+
+    projectState.frentesMigrationRun = true;
+    await saveState();
 }
 
 // Load seed data from script variable (prevents CORS blockages on file://)
@@ -887,7 +1048,7 @@ function renderSummaryStats() {
     projectState.units.forEach(u => {
         totalProgressSum += u.activeFrontIndex;
         
-        if (u.activeFrontIndex === 12) {
+        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
             concluidas++;
         } else if (u.activeFrontIndex > 0) {
             ativas++;
@@ -900,7 +1061,7 @@ function renderSummaryStats() {
         }
     });
 
-    const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * 12)) * 100) : 0;
+    const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * FRENTES_SEQUENCIA.length)) * 100) : 0;
     const pctC = totalUnits > 0 ? (concluidas / totalUnits * 100).toFixed(1) : "0.0";
     const pctR = totalUnits > 0 ? (reprovadas / totalUnits * 100).toFixed(1) : "0.0";
     const pctA = totalUnits > 0 ? (ativas / totalUnits * 100).toFixed(1) : "0.0";
@@ -915,7 +1076,7 @@ function renderLegendFilters() {
     const container = document.getElementById('map-frentes-legend');
     container.innerHTML = '';
 
-    // Standard legends for 12 frentes
+    // Standard legends for all frentes
     FRENTES_SEQUENCIA.forEach((f, idx) => {
         const activeUnitsOnThisFront = projectState.units.filter(u => u.activeFrontIndex === idx).length;
         
@@ -948,7 +1109,7 @@ function renderLegendFilters() {
     });
 
     // Add Concluído Legend
-    const doneUnits = projectState.units.filter(u => u.activeFrontIndex === 12).length;
+    const doneUnits = projectState.units.filter(u => u.activeFrontIndex === FRENTES_SEQUENCIA.length).length;
     const doneItem = document.createElement('div');
     doneItem.className = 'legend-item';
     if (activeFilterFront === 'Concluido') { doneItem.classList.add('filtered-active'); }
@@ -1039,7 +1200,7 @@ function renderTowers() {
                     let frontName = "";
                     let cellClass = "";
                     
-                    if (frontIndex === 12) {
+                    if (frontIndex === FRENTES_SEQUENCIA.length) {
                         frontName = "Concluido";
                         cellClass = "c-concluido";
                     } else {
@@ -1052,7 +1213,7 @@ function renderTowers() {
                     
                     // Add delay/out-of-order pulsing classes
                     const outOfOrder = isUnitOutOfOrder(matchedUnit);
-                    const delayed = frontIndex < 12 ? isUnitDelayed(matchedUnit, frontName) : false;
+                    const delayed = frontIndex < FRENTES_SEQUENCIA.length ? isUnitDelayed(matchedUnit, frontName) : false;
                     
                     if (outOfOrder && delayed) {
                         cell.classList.add('pulsing-both');
@@ -1062,7 +1223,7 @@ function renderTowers() {
                         cell.classList.add('pulsing-purple');
                     }
                     
-                    cell.title = `${matchedUnit.tower} - Apto ${unitNum}\nFrente: ${frontIndex === 12 ? 'Concluído (VA)' : frontName}\nStatus: ${matchedUnit.status_geral}`;
+                    cell.title = `${matchedUnit.tower} - Apto ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Concluído (VA)' : frontName}\nStatus: ${matchedUnit.status_geral}`;
                     if (outOfOrder) cell.title += `\n⚠️ Fora de sequência!`;
                     if (delayed) cell.title += `\n⚠️ Prazo atrasado!`;
                     
@@ -1105,7 +1266,7 @@ function renderFrentesSubtabs() {
     FRENTES_SEQUENCIA.forEach((f) => {
         const count = projectState.units.filter(u => {
             const activeName = FRENTES_SEQUENCIA[u.activeFrontIndex];
-            return activeName === f && u.activeFrontIndex < 12;
+            return activeName === f && u.activeFrontIndex < FRENTES_SEQUENCIA.length;
         }).length;
 
         const btn = document.createElement('button');
@@ -1596,7 +1757,7 @@ function resolveReprova(unitId, reprovaId) {
             // Re-evaluate general unit status if no pending reprovas
             const hasPending = unit.reprovas.some(r => r.status === 'Pendente');
             if (!hasPending) {
-                if (unit.activeFrontIndex === 12) {
+                if (unit.activeFrontIndex === FRENTES_SEQUENCIA.length) {
                     unit.status_geral = 'Aprovado';
                 } else {
                     unit.status_geral = 'Ativo';
@@ -1998,7 +2159,7 @@ function openUnitDetailsModal(unitId) {
     optDone.textContent = "Concluído (VA)";
     selector.appendChild(optDone);
 
-    if (u.activeFrontIndex === 12) {
+    if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
         selector.value = "Concluido";
     } else {
         selector.value = FRENTES_SEQUENCIA[u.activeFrontIndex];
@@ -2014,9 +2175,9 @@ function openUnitDetailsModal(unitId) {
     else badge.classList.add('bg-amber');
 
     // Progress Bar
-    const progressPercent = Math.round((u.activeFrontIndex / 12) * 100);
+    const progressPercent = Math.round((u.activeFrontIndex / FRENTES_SEQUENCIA.length) * 100);
     document.getElementById('modal-unit-progress-bar').style.width = `${progressPercent}%`;
-    document.getElementById('modal-unit-progress-text').textContent = `${u.activeFrontIndex}/12 Frentes Concluídas`;
+    document.getElementById('modal-unit-progress-text').textContent = `${u.activeFrontIndex}/${FRENTES_SEQUENCIA.length} Frentes Concluídas`;
 
     // Labels
     document.getElementById('modal-unit-val-tower').textContent = u.tower;
@@ -2121,7 +2282,9 @@ function openUnitDetailsModal(unitId) {
 
     // Show Add Reprova button if unit is in VQ or VA step
     const btnAddRep = document.getElementById('modal-btn-add-reprova');
-    if ((u.activeFrontIndex === 10 || u.activeFrontIndex === 11) && u.activeFrontIndex < 12) {
+    const vqIdx = FRENTES_SEQUENCIA.indexOf("VQ");
+    const vaIdx = FRENTES_SEQUENCIA.indexOf("VA");
+    if ((u.activeFrontIndex === vqIdx || u.activeFrontIndex === vaIdx) && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
         btnAddRep.classList.remove('hidden');
     } else {
         btnAddRep.classList.add('hidden');
@@ -2291,7 +2454,7 @@ function saveUpdateFrontFields(unitId, frenteName, isConcluido) {
         u.activeFrontIndex++;
         
         // Update general status
-        if (u.activeFrontIndex === 12) {
+        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
             u.status_geral = 'Aprovado';
         } else {
             u.status_geral = 'Ativo';
@@ -3121,7 +3284,7 @@ function getTowerOverallCompletionDate(towerName) {
     
     if (!maxDateStr) {
         const towerUnits = projectState.units.filter(u => u.tower === towerName);
-        const allDone = towerUnits.every(u => u.activeFrontIndex === 12);
+        const allDone = towerUnits.every(u => u.activeFrontIndex === FRENTES_SEQUENCIA.length);
         if (allDone) {
             let maxFinal = null;
             towerUnits.forEach(u => {
@@ -3146,8 +3309,8 @@ function getTowerOverallCompletionDate(towerName) {
 // Helper para detectar se a unidade pulou alguma etapa (Executada fora de ordem)
 function isUnitOutOfOrder(unit) {
     const activeIdx = unit.activeFrontIndex;
-    // Unidade na frente inicial (Janela = 0) ou concluída (12) não são consideradas fora de ordem
-    if (activeIdx === 0 || activeIdx >= 12) return false;
+    // Unidade na frente inicial (Janela = 0) ou concluída não são consideradas fora de ordem
+    if (activeIdx === 0 || activeIdx >= FRENTES_SEQUENCIA.length) return false;
 
     // Verifica se alguma frente anterior não foi concluída
     for (let i = 0; i < activeIdx; i++) {
@@ -3209,7 +3372,7 @@ async function handleManualActiveFrontChange(e) {
     if (!unit) return;
 
     const selectedVal = selector.value;
-    let targetIndex = 12;
+    let targetIndex = FRENTES_SEQUENCIA.length;
     if (selectedVal !== "Concluido") {
         targetIndex = FRENTES_SEQUENCIA.indexOf(selectedVal);
     }
@@ -3219,7 +3382,7 @@ async function handleManualActiveFrontChange(e) {
     unit.activeFrontIndex = targetIndex;
 
     // Atualizar status geral do apartamento
-    if (targetIndex === 12) {
+    if (targetIndex === FRENTES_SEQUENCIA.length) {
         unit.status_geral = 'Aprovado';
     } else {
         const hasPendingReprova = unit.reprovas.some(r => r.status === 'Pendente');
