@@ -462,8 +462,39 @@ function setupEventListeners() {
         document.getElementById('user-edit-mode').value = "false";
         document.getElementById('user-username').disabled = false;
         document.getElementById('form-add-user').reset();
+        
+        // Reset modal eye icon to normal password mode
+        document.getElementById('user-password').type = 'password';
+        const toggleBtn = document.getElementById('toggle-user-password');
+        if (toggleBtn) toggleBtn.querySelector('i').className = 'fa fa-eye';
+
+        populateUserModalRoles();
         modalAddUser.classList.remove('hidden');
     });
+
+    function populateUserModalRoles() {
+        const select = document.getElementById('user-role');
+        if (!select) return;
+        select.innerHTML = '';
+        
+        const editableRoles = getEditableRoles(currentUser ? currentUser.role : '');
+        const rolesMap = {
+            'fiscal': 'Auxiliar de Engenharia',
+            'analista': 'Analista de Engenharia',
+            'controle': 'Controle de Obra',
+            'gestor': 'Gestor (a)',
+            'diretor': 'Diretor (Visualização)',
+            'engenheiro': 'Engenheiro',
+            'admin': 'Administrador'
+        };
+        
+        editableRoles.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            opt.textContent = rolesMap[r] || r;
+            select.appendChild(opt);
+        });
+    }
 
     // Submit user form
     document.getElementById('form-add-user').addEventListener('submit', handleAddUserSubmit);
@@ -627,14 +658,41 @@ function getRoleLabel(role) {
     return labels[role] || role;
 }
 
+function getEditableRoles(currentUserRole) {
+    if (currentUserRole === 'admin') {
+        return ['diretor', 'gestor', 'engenheiro', 'analista', 'fiscal', 'controle'];
+    }
+    if (currentUserRole === 'diretor') {
+        return ['gestor', 'engenheiro', 'analista', 'fiscal', 'controle'];
+    }
+    if (currentUserRole === 'gestor') {
+        return ['engenheiro', 'analista', 'fiscal', 'controle'];
+    }
+    if (currentUserRole === 'engenheiro') {
+        return ['analista', 'fiscal', 'controle'];
+    }
+    return [];
+}
+
 function applyRoleTheme(role) {
     document.body.classList.remove('theme-green-light', 'theme-black-elegant', 'theme-gold-premium');
+    const icon = themeToggleBtn.querySelector('i');
+    
     if (role === 'fiscal' || role === 'analista') {
         document.body.classList.add('theme-green-light');
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+        if (icon) icon.className = 'fa fa-moon';
     } else if (role === 'engenheiro' || role === 'gestor') {
         document.body.classList.add('theme-black-elegant');
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+        if (icon) icon.className = 'fa fa-sun';
     } else if (role === 'admin' || role === 'diretor') {
         document.body.classList.add('theme-gold-premium');
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+        if (icon) icon.className = 'fa fa-sun';
     }
 }
 
@@ -655,7 +713,7 @@ function loginSuccess(user) {
     if (logoTitle && projectState) {
         let displayProjectName = projectState.name || 'MRV Organizer';
         displayProjectName = displayProjectName.replace('MRV - ', '');
-        logoTitle.innerHTML = `mrv<span style="color: #f58521; font-weight: 700; text-transform: capitalize;"> - ${displayProjectName}</span>`;
+        logoTitle.innerHTML = `<span style="text-transform: uppercase; font-weight: 700;">MRV</span><span style="color: #f58521; font-weight: 700; text-transform: capitalize;"> - ${displayProjectName}</span>`;
     }
     
     if (user.role === 'admin' || user.role === 'engenheiro') {
@@ -1523,12 +1581,14 @@ function renderUsersList() {
                 </div>
             </td>
             <td>
-                ${u.username === 'rafael.samorim' ? '<span class="text-muted">Sistema</span>' : `
+                ${u.username === 'rafael.samorim' ? '<span class="text-muted">Sistema</span>' : 
+                  (currentUser && getEditableRoles(currentUser.role).includes(u.role)) ? `
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-xs btn-outline btn-edit-user" data-username="${u.username}"><i class="fa fa-pen"></i></button>
                         <button class="btn btn-xs btn-danger btn-delete-user" data-username="${u.username}"><i class="fa fa-trash"></i></button>
                     </div>
-                `}
+                  ` : '<span class="text-muted">-</span>'
+                }
             </td>
         `;
 
@@ -1558,6 +1618,9 @@ function renderUsersList() {
                     document.getElementById('user-username').disabled = true;
                     document.getElementById('user-fullname').value = targetUser.name;
                     document.getElementById('user-password').value = targetUser.password;
+                    
+                    populateUserModalRoles();
+
                     document.getElementById('user-role').value = targetUser.role;
                     // Reset modal eye icon to normal password mode
                     document.getElementById('user-password').type = 'password';
@@ -1589,6 +1652,13 @@ function handleAddUserSubmit(e) {
     const username = document.getElementById('user-username').value.trim().toLowerCase();
     const pass = document.getElementById('user-password').value;
     const role = document.getElementById('user-role').value;
+
+    // Safety check: verify if currentUser is allowed to assign this role
+    const editableRoles = getEditableRoles(currentUser ? currentUser.role : '');
+    if (!editableRoles.includes(role)) {
+        alert("Você não tem permissão para assinalar este nível de acesso.");
+        return;
+    }
 
     if (isEdit) {
         const user = projectState.users.find(u => u.username === username);
@@ -3211,13 +3281,16 @@ function initPermissoesPage() {
 
     if (!userSelect || !gridWrapper || !checkboxesContainer || !btnSave) return;
 
-    // Populate user selector (exclude system admin rafael.samorim to prevent self-locking)
+    // Populate user selector (exclude system admin rafael.samorim to prevent self-locking and filter by editable roles)
     userSelect.innerHTML = '<option value="">Escolha um usuário...</option>';
+    const editableRoles = getEditableRoles(currentUser ? currentUser.role : '');
     projectState.users.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.username;
-        opt.textContent = `${u.name} - ${getRoleLabel(u.role)} (${u.username})`;
-        userSelect.appendChild(opt);
+        if (u.username !== 'rafael.samorim' && editableRoles.includes(u.role)) {
+            const opt = document.createElement('option');
+            opt.value = u.username;
+            opt.textContent = `${u.name} - ${getRoleLabel(u.role)} (${u.username})`;
+            userSelect.appendChild(opt);
+        }
     });
 
     // Reset grid

@@ -72,7 +72,8 @@ body.light-theme {
 }
 
 /* Tema Verde Claro (Auxiliar e Analista) */
-body.theme-green-light {
+body.theme-green-light,
+body.theme-green-light.light-theme {
     --bg-primary: #e8f5e9;
     --bg-secondary: #ffffff;
     --bg-card: #f1f8f5;
@@ -96,9 +97,34 @@ body.theme-green-light {
     
     --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
 }
+body.theme-green-light.dark-theme {
+    --bg-primary: #0b1c10;
+    --bg-secondary: #122918;
+    --bg-card: #1b3823;
+    --bg-card-hover: #264f32;
+    --border-color: #2a5c39;
+    
+    --text-primary: #e8f5e9;
+    --text-secondary: #a5d6a7;
+    --text-muted: #81c784;
+    
+    --primary-color: #81c784;
+    --primary-hover: #a5d6a7;
+    --primary-glow: rgba(129, 199, 132, 0.35);
+    
+    --status-active: #81c784;
+    --status-aprovado: #2e7d32;
+    --status-reprovado: #e57373;
+    --status-permutante: #ba68c8;
+    --status-bloqueado: #90a4ae;
+    --status-agendado: #ffb74d;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
+}
 
 /* Tema Preto Elegante (Engenheiro e Gestor) */
-body.theme-black-elegant {
+body.theme-black-elegant,
+body.theme-black-elegant.dark-theme {
     --bg-primary: #050505;
     --bg-secondary: #0f0f11;
     --bg-card: #151518;
@@ -122,9 +148,34 @@ body.theme-black-elegant {
     
     --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
 }
+body.theme-black-elegant.light-theme {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #ffffff;
+    --bg-card: #eaeaea;
+    --bg-card-hover: #dcdcdc;
+    --border-color: #cccccc;
+    
+    --text-primary: #111113;
+    --text-secondary: #55555a;
+    --text-muted: #888890;
+    
+    --primary-color: #222225;
+    --primary-hover: #000000;
+    --primary-glow: rgba(0, 0, 0, 0.15);
+    
+    --status-active: #1e88e5;
+    --status-aprovado: #43a047;
+    --status-reprovado: #e53935;
+    --status-permutante: #8e24aa;
+    --status-bloqueado: #b0bec5;
+    --status-agendado: #fb8c00;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
+}
 
 /* Tema Dourado Premium (Administrador e Diretor) */
-body.theme-gold-premium {
+body.theme-gold-premium,
+body.theme-gold-premium.dark-theme {
     --bg-primary: #0f0d0a;
     --bg-secondary: #16130f;
     --bg-card: #221d17;
@@ -147,6 +198,30 @@ body.theme-gold-premium {
     --status-agendado: #f0ad4e;
     
     --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
+}
+body.theme-gold-premium.light-theme {
+    --bg-primary: #faf8f5;
+    --bg-secondary: #ffffff;
+    --bg-card: #f4e0c4;
+    --bg-card-hover: #edd1ab;
+    --border-color: #dfc7a7;
+    
+    --text-primary: #4a3c31;
+    --text-secondary: #7c6551;
+    --text-muted: #a8927e;
+    
+    --primary-color: #aa820a;
+    --primary-hover: #c99c10;
+    --primary-glow: rgba(170, 130, 10, 0.15);
+    
+    --status-active: #1e88e5;
+    --status-aprovado: #aa820a;
+    --status-reprovado: #d9534f;
+    --status-permutante: #8e24aa;
+    --status-bloqueado: #b0bec5;
+    --status-agendado: #f0ad4e;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
 }
 
 body {
