@@ -1861,6 +1861,79 @@ function renderFrenteDetails() {
 
         if (canBatchApprove && pendingUnits.length > 0) {
             loteContainer.classList.remove('hidden');
+
+            // Dynamically handle lote status dropdown based on activeFrente
+            const loteStatusGroup = document.getElementById('lote-status-group');
+            const loteStatusSelect = document.getElementById('lote-status');
+            const loteSubmitBtn = document.getElementById('btn-lote-submit');
+
+            if (loteStatusGroup && loteStatusSelect) {
+                const isQualityFront = ['VA', 'VQ', 'VH', 'VE'].includes(activeFrente);
+                if (isQualityFront) {
+                    loteStatusGroup.classList.remove('hidden');
+                    
+                    // Save previous selection to restore
+                    const prevStatusVal = loteStatusSelect.value;
+                    loteStatusSelect.innerHTML = '';
+
+                    let statuses = [];
+                    if (activeFrente === 'VA') {
+                        statuses = [
+                            { val: 'APROVADO', label: 'Aprovado' },
+                            { val: 'REPROVADO', label: 'Reprovado' },
+                            { val: 'LIBERADO', label: 'Liberado' },
+                            { val: 'BLOQUEADO', label: 'Bloqueado' },
+                            { val: 'INDISPONÍVEL', label: 'Indisponível' },
+                            { val: 'AGENDADO', label: 'Agendado' },
+                            { val: 'PERMUTANTE', label: 'Permutante' }
+                        ];
+                    } else {
+                        // VH, VE, VQ
+                        statuses = [
+                            { val: 'APROVADO', label: 'Aprovado' },
+                            { val: 'REPROVADO', label: 'Reprovado' },
+                            { val: 'LIBERADO', label: 'Liberado' },
+                            { val: 'BLOQUEADO', label: 'Bloqueado' }
+                        ];
+                    }
+
+                    statuses.forEach(st => {
+                        const opt = document.createElement('option');
+                        opt.value = st.val;
+                        opt.textContent = st.label;
+                        if (st.val === prevStatusVal) {
+                            opt.selected = true;
+                        }
+                        loteStatusSelect.appendChild(opt);
+                    });
+
+                    // Add listener to change button text dynamically based on status
+                    const updateSubmitBtnText = () => {
+                        if (loteSubmitBtn) {
+                            if (loteStatusSelect.value === 'APROVADO') {
+                                loteSubmitBtn.innerHTML = '<i class="fa fa-check-double"></i> Aprovar em Lote';
+                            } else {
+                                loteSubmitBtn.innerHTML = '<i class="fa fa-traffic-light"></i> Aplicar Status em Lote';
+                            }
+                        }
+                    };
+
+                    if (!loteStatusSelect.dataset.listenerBound) {
+                        loteStatusSelect.addEventListener('change', updateSubmitBtnText);
+                        loteStatusSelect.dataset.listenerBound = 'true';
+                    }
+
+                    // Run it once now
+                    updateSubmitBtnText();
+
+                } else {
+                    loteStatusGroup.classList.add('hidden');
+                    loteStatusSelect.innerHTML = '';
+                    if (loteSubmitBtn) {
+                        loteSubmitBtn.innerHTML = '<i class="fa fa-check-double"></i> Aprovar em Lote';
+                    }
+                }
+            }
             
             // Save current selection to restore after rendering
             const currentSelectedTower = loteTowerSelect.value;
@@ -3360,12 +3433,20 @@ async function handleBatchApprovalSubmit(e) {
 
     let unitsToApprove = projectState.units.filter(u => selectedUnitIds.includes(u.id));
 
+    const loteStatusSelect = document.getElementById('lote-status');
+    const loteStatusGroup = document.getElementById('lote-status-group');
+    const hasStatus = loteStatusGroup && !loteStatusGroup.classList.contains('hidden');
+    const selectedStatus = hasStatus ? loteStatusSelect.value : 'APROVADO';
+
     if (unitsToApprove.length === 0) {
         alert("Nenhuma unidade pendente foi selecionada para aprovação em lote.");
         return;
     }
 
-    const confirmMsg = `Deseja realmente aprovar em lote a frente "${activeFrente}" para as ${unitsToApprove.length} unidades selecionadas?`;
+    const confirmMsg = selectedStatus === 'APROVADO' 
+        ? `Deseja realmente aprovar em lote a frente "${activeFrente}" para as ${unitsToApprove.length} unidades selecionadas?`
+        : `Deseja realmente aplicar o status "${selectedStatus}" em lote na frente "${activeFrente}" para as ${unitsToApprove.length} unidades selecionadas?`;
+        
     if (!confirm(confirmMsg)) {
         return;
     }
@@ -3393,22 +3474,39 @@ async function handleBatchApprovalSubmit(e) {
         const fData = u.frontsData[activeFrente];
         fData.responsavel = responsavel;
         fData.dataFinal = formattedDate;
-        fData.concluido = true;
-        fData.duracaoProj = fData.duracaoProj || 1;
-        fData.duracaoReal = fData.duracaoReal || 1;
         
         if (batchMaterials.length > 0) {
             fData.materials = JSON.parse(JSON.stringify(batchMaterials));
         }
 
-        // Advance front index
-        u.activeFrontIndex++;
+        if (selectedStatus === 'APROVADO') {
+            fData.concluido = true;
+            fData.duracaoProj = fData.duracaoProj || 1;
+            fData.duracaoReal = fData.duracaoReal || 1;
 
-        // Update status_geral
-        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
-            u.status_geral = 'Aprovado';
+            // Apply quality status property to the unit if it is a quality front
+            if (activeFrente === 'VH') u.status_vh = 'APROVADO';
+            else if (activeFrente === 'VE') u.status_ve = 'APROVADO';
+            else if (activeFrente === 'VQ') u.status_vq = 'APROVADO';
+            else if (activeFrente === 'VA') u.status_va = 'APROVADO';
+
+            // Advance front index
+            u.activeFrontIndex++;
+
+            // Update status_geral
+            if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
+                u.status_geral = 'Aprovado';
+            } else {
+                u.status_geral = 'Ativo';
+            }
         } else {
-            u.status_geral = 'Ativo';
+            fData.concluido = false;
+            
+            // Apply other quality status property
+            if (activeFrente === 'VH') u.status_vh = selectedStatus;
+            else if (activeFrente === 'VE') u.status_ve = selectedStatus;
+            else if (activeFrente === 'VQ') u.status_vq = selectedStatus;
+            else if (activeFrente === 'VA') u.status_va = selectedStatus;
         }
     });
 
@@ -3420,7 +3518,11 @@ async function handleBatchApprovalSubmit(e) {
     document.getElementById('lote-material-qtd').value = "";
 
     // Show feedback
-    alert(`${unitsToApprove.length} unidades aprovadas com sucesso!`);
+    if (selectedStatus === 'APROVADO') {
+        alert(`${unitsToApprove.length} unidades aprovadas com sucesso!`);
+    } else {
+        alert(`Status "${selectedStatus}" aplicado com sucesso para ${unitsToApprove.length} unidades!`);
+    }
 
     // Refresh UI
     if (activePage === 'page-frentes') {

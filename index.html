@@ -467,6 +467,14 @@
                                     </div>
                                 </div>
 
+                                <!-- STATUS EM LOTE (Apenas frentes de qualidade) -->
+                                <div class="filter-group hidden" id="lote-status-group" style="flex: 1.2; min-width: 140px;">
+                                    <label for="lote-status"><i class="fa fa-traffic-light text-success"></i> Status em Lote</label>
+                                    <select id="lote-status" class="input-glow">
+                                        <!-- Preenchido via JS -->
+                                    </select>
+                                </div>
+
                                 <div class="filter-group" style="flex: 1.5; min-width: 160px;">
                                     <label for="lote-resp"><i class="fa fa-user-check text-success"></i> Responsável</label>
                                     <input type="text" id="lote-resp" class="input-glow" placeholder="Ex: Equipe Splendore" required>
@@ -484,7 +492,7 @@
                                     <input type="number" id="lote-material-qtd" min="0" step="any" class="input-glow" placeholder="Ex: 10">
                                 </div>
                                 <div class="filter-group" style="flex: 1; min-width: 160px;">
-                                    <button type="submit" class="btn btn-primary" style="height: 38px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <button type="submit" id="btn-lote-submit" class="btn btn-primary" style="height: 38px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                         <i class="fa fa-check-double"></i> Aprovar em Lote
                                     </button>
                                 </div>
