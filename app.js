@@ -150,8 +150,10 @@ const btnLogout = document.getElementById('btn-logout');
 const themeToggleBtn = document.getElementById('theme-toggle');
 
 // Summary Stats
-const statConcluidos = document.getElementById('stat-concluidos');
-const statReprovados = document.getElementById('stat-reprovados');
+const statVqAprovados = document.getElementById('stat-vq-aprovados');
+const statVqReprovados = document.getElementById('stat-vq-reprovados');
+const statVaAprovados = document.getElementById('stat-va-aprovados');
+const statVaReprovados = document.getElementById('stat-va-reprovados');
 const statAtivos = document.getElementById('stat-ativos');
 const statProgresso = document.getElementById('stat-progresso');
 
@@ -1040,34 +1042,50 @@ function navigateToPage(pageId) {
 
 function renderSummaryStats() {
     const totalUnits = projectState.units.length;
-    let concluidas = 0;
-    let reprovadas = 0;
+    let vqAprovados = 0;
+    let vqReprovados = 0;
+    let vaAprovados = 0;
+    let vaReprovados = 0;
     let ativas = 0;
     let totalProgressSum = 0;
 
     projectState.units.forEach(u => {
         totalProgressSum += u.activeFrontIndex;
         
-        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
-            concluidas++;
-        } else if (u.activeFrontIndex > 0) {
+        if (u.activeFrontIndex > 0 && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
             ativas++;
         }
         
-        // Count units with active (Pendente) reprovas
-        const hasPendingReprova = u.reprovas.some(r => r.status === 'Pendente');
-        if (hasPendingReprova) {
-            reprovadas++;
+        // VQ Checks: Reproved if there is any pending VQ reprova; Approved if VQ is completed and no pending VQ reprova
+        const hasVqPending = u.reprovas && u.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
+        const isVqDone = u.frontsData && u.frontsData['VQ'] && u.frontsData['VQ'].concluido;
+        if (hasVqPending) {
+            vqReprovados++;
+        } else if (isVqDone) {
+            vqAprovados++;
+        }
+
+        // VA Checks: Reproved if there is any pending VA reprova; Approved if VA is completed and no pending VA reprova
+        const hasVaPending = u.reprovas && u.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
+        const isVaDone = u.frontsData && u.frontsData['VA'] && u.frontsData['VA'].concluido;
+        if (hasVaPending) {
+            vaReprovados++;
+        } else if (isVaDone) {
+            vaAprovados++;
         }
     });
 
     const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * FRENTES_SEQUENCIA.length)) * 100) : 0;
-    const pctC = totalUnits > 0 ? (concluidas / totalUnits * 100).toFixed(1) : "0.0";
-    const pctR = totalUnits > 0 ? (reprovadas / totalUnits * 100).toFixed(1) : "0.0";
+    const pctVqA = totalUnits > 0 ? (vqAprovados / totalUnits * 100).toFixed(1) : "0.0";
+    const pctVqR = totalUnits > 0 ? (vqReprovados / totalUnits * 100).toFixed(1) : "0.0";
+    const pctVaA = totalUnits > 0 ? (vaAprovados / totalUnits * 100).toFixed(1) : "0.0";
+    const pctVaR = totalUnits > 0 ? (vaReprovados / totalUnits * 100).toFixed(1) : "0.0";
     const pctA = totalUnits > 0 ? (ativas / totalUnits * 100).toFixed(1) : "0.0";
 
-    statConcluidos.textContent = `${concluidas} (${pctC}%)`;
-    statReprovados.textContent = `${reprovadas} (${pctR}%)`;
+    statVqAprovados.textContent = `${vqAprovados} (${pctVqA}%)`;
+    statVqReprovados.textContent = `${vqReprovados} (${pctVqR}%)`;
+    statVaAprovados.textContent = `${vaAprovados} (${pctVaA}%)`;
+    statVaReprovados.textContent = `${vaReprovados} (${pctVaR}%)`;
     statAtivos.textContent = `${ativas} (${pctA}%)`;
     statProgresso.textContent = `${percentGeral}%`;
 }
