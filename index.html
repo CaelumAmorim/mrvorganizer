@@ -804,6 +804,66 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- CARD: RELATÓRIO DE PLANEJAMENTO SEMANAL -->
+                    <div class="card mt-4" id="relatorio-planejamento-container">
+                        <div class="card-header">
+                            <h2><i class="fa fa-file-invoice text-success"></i> Planejamento Semanal (Metas e Abastecimento)</h2>
+                        </div>
+                        <div class="card-body">
+                            <p class="section-desc" style="margin-bottom: 1rem;">
+                                Extraia planilhas semanais de execução (metas da semana) e controle o abastecimento de materiais. Visualize o status de cada pavimento na figura da torre e gerencie as personalizações de Kit Exclusivitá.
+                            </p>
+                            <div class="filter-row" style="align-items: flex-end; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                <div class="filter-group" style="flex: 1; min-width: 140px;">
+                                    <label for="rep-rep-tower"><i class="fa fa-building text-success"></i> Selecionar Torre</label>
+                                    <select id="rep-rep-tower" class="input-glow">
+                                        <option value="">Selecione...</option>
+                                        <!-- Preenchido via JS -->
+                                    </select>
+                                </div>
+                                <div class="filter-group" style="flex: 1; min-width: 140px;">
+                                    <label for="rep-rep-date"><i class="fa fa-calendar text-success"></i> Data de Referência</label>
+                                    <input type="date" id="rep-rep-date" class="input-glow">
+                                </div>
+                                <div class="filter-group" style="flex: 1.5; min-width: 280px; display: flex; gap: 8px;">
+                                    <button type="button" id="btn-export-meta-semana" class="btn btn-outline" style="height: 38px; flex: 1; font-size: 0.85rem; padding: 0 12px;">
+                                        <i class="fa fa-file-excel text-success"></i> Planilha de Metas
+                                    </button>
+                                    <button type="button" id="btn-export-abast-semana" class="btn btn-outline" style="height: 38px; flex: 1; font-size: 0.85rem; padding: 0 12px;">
+                                        <i class="fa fa-truck-ramp-box text-success"></i> Planilha de Abastecimento
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Visual da Figura da Torre -->
+                            <div id="rep-tower-layout-container" class="rep-tower-container hidden">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa fa-sitemap text-success"></i> Esquema de Abastecimento da Torre
+                                </h3>
+                                <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.75rem; flex-wrap: wrap;">
+                                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 12px; height: 12px; background: rgba(0,200,83,0.1); border: 1px solid #00c853; border-radius: 2px;"></span> Executado</span>
+                                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 12px; height: 12px; background: rgba(248,113,113,0.15); border: 1px solid #f87171; border-radius: 2px;"></span> Crítico (2 dias)</span>
+                                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 12px; height: 12px; background: rgba(251,191,36,0.12); border: 1px solid #fbbf24; border-radius: 2px;"></span> Planejado (3-5 dias)</span>
+                                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 12px; height: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 2px;"></span> Sem Planejamento</span>
+                                    <span style="margin-left: auto; color: var(--text-muted); font-weight: 500;">* Clique no apto para editar materiais</span>
+                                </div>
+                                <div id="rep-tower-grid" class="rep-tower-grid">
+                                    <!-- Renderizado dinamicamente via JS -->
+                                </div>
+                            </div>
+
+                            <!-- Alertas de Abastecimento -->
+                            <div id="rep-alerts-container" class="hidden" style="margin-top: 1.5rem;">
+                                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa fa-triangle-exclamation text-warning"></i> Alertas de Abastecimento (Subir Material 2 a 5 dias antes)
+                                </h3>
+                                <div id="rep-alerts-list" class="rep-alerts-list">
+                                    <!-- Preenchido via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- PÁGINA 4: GERENCIAR USUÁRIOS (ADMIN ONLY) -->
@@ -1653,6 +1713,31 @@
                 <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="button" class="btn btn-outline modal-close">Cancelar</button>
                     <button type="submit" class="btn btn-primary"><i class="fa fa-circle-check"></i> Aprovar Selecionados</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE MATERIAIS DO PLANEJAMENTO (KIT EXCLUSIVITÁ) -->
+    <div id="modal-edit-rep-materials" class="modal-overlay hidden">
+        <div class="modal-card modal-lg" style="width: 750px; max-width: 95%;">
+            <div class="modal-header">
+                <h2><i class="fa fa-boxes-packing text-success"></i> Planejamento de Insumos - Apto <span id="modal-edit-rep-unit-name">-</span></h2>
+                <button type="button" class="btn-close modal-close">&times;</button>
+            </div>
+            <form id="form-edit-rep-materials">
+                <input type="hidden" id="modal-edit-rep-unit-id">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <p class="section-desc" style="margin-bottom: 1rem;">
+                        Visualize ou altere os materiais para as frentes ativas desta unidade (essencial para personalizações do "Kit Exclusivitá" como tipo do piso e bancadas).
+                    </p>
+                    <div id="modal-edit-rep-materials-list" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-floppy-disk"></i> Salvar Alterações</button>
                 </div>
             </form>
         </div>

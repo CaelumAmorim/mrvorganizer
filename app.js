@@ -1081,6 +1081,9 @@ function setupEventListeners() {
     if (formBatchApprove) {
         formBatchApprove.addEventListener('submit', handleBatchApproveSubmit);
     }
+    
+    // Weekly Planning listeners initialization
+    initWeeklyPlanningListeners();
 }
 
 // Login Success Routing
@@ -2383,6 +2386,31 @@ function renderReprovasPage() {
 
         tbody.appendChild(tr);
     });
+
+    // Populate planning report tower options
+    const repRepTower = document.getElementById('rep-rep-tower');
+    if (repRepTower && repRepTower.children.length <= 1) {
+        repRepTower.innerHTML = '<option value="">Selecione...</option>';
+        projectState.towers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = t.name;
+            repRepTower.appendChild(opt);
+        });
+    }
+
+    // Set default date for planning date to today
+    const repRepDate = document.getElementById('rep-rep-date');
+    if (repRepDate && !repRepDate.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        repRepDate.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Render Weekly Planning Report
+    renderWeeklyPlanningReport();
 }
 
 function resolveReprova(unitId, reprovaId) {
@@ -5122,3 +5150,643 @@ function initPermissoesPage() {
         alert(`Permissões salvas com sucesso para o usuário ${targetUser.name}!`);
     };
 }
+
+// -------------------------------------------------------------
+// RELATÓRIO DE PLANEJAMENTO SEMANAL (METAS E ABASTECIMENTO)
+// -------------------------------------------------------------
+
+function initWeeklyPlanningListeners() {
+    const repRepTower = document.getElementById('rep-rep-tower');
+    const repRepDate = document.getElementById('rep-rep-date');
+    const btnMeta = document.getElementById('btn-export-meta-semana');
+    const btnAbast = document.getElementById('btn-export-abast-semana');
+    const formEditMat = document.getElementById('form-edit-rep-materials');
+
+    if (repRepTower) {
+        repRepTower.addEventListener('change', renderWeeklyPlanningReport);
+    }
+    if (repRepDate) {
+        repRepDate.addEventListener('change', renderWeeklyPlanningReport);
+    }
+    if (btnMeta) {
+        btnMeta.addEventListener('click', exportWeeklyGoals);
+    }
+    if (btnAbast) {
+        btnAbast.addEventListener('click', exportWeeklySupply);
+    }
+    if (formEditMat) {
+        formEditMat.addEventListener('submit', handleSaveWeeklyMaterials);
+    }
+
+    // Modal close buttons
+    const modalEditMat = document.getElementById('modal-edit-rep-materials');
+    if (modalEditMat) {
+        modalEditMat.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalEditMat.classList.add('hidden');
+            });
+        });
+    }
+}
+
+function getProjectionsMapForService(serviceName) {
+    const fConfig = projectState.frentesConfig[serviceName] || { dataInicio: "2026-06-08", capacidadeDia: 2 };
+    const dataInicio = fConfig.dataInicio || "2026-06-08";
+    
+    const pendingUnits = projectState.units.filter(u => !u.frontsData[serviceName] || !u.frontsData[serviceName].concluido);
+    pendingUnits.sort((a, b) => {
+        if (a.tower !== b.tower) return a.tower.localeCompare(b.tower);
+        if (a.floor !== b.floor) return a.floor - b.floor;
+        return a.unit.localeCompare(b.unit);
+    });
+    
+    const cap = parseFloat(fConfig.capacidadeDia) || 1;
+    const numWorkers = Math.max(1, Math.floor(cap));
+    const workersAvailability = Array(numWorkers).fill(0);
+    
+    const projectionsMap = {};
+    pendingUnits.forEach((u) => {
+        let minWorkerIdx = 0;
+        let minAvailTime = workersAvailability[0];
+        for (let w = 1; w < numWorkers; w++) {
+            if (workersAvailability[w] < minAvailTime) {
+                minAvailTime = workersAvailability[w];
+                minWorkerIdx = w;
+            }
+        }
+        
+        const uData = u.frontsData[serviceName] || {};
+        let duration = 1 / cap;
+        if (uData.duracaoProj && parseFloat(uData.duracaoProj) > 0) {
+            duration = parseFloat(uData.duracaoProj);
+        }
+        
+        const startTime = workersAvailability[minWorkerIdx];
+        const endTime = startTime + duration;
+        workersAvailability[minWorkerIdx] = endTime;
+        
+        const daysNeeded = Math.floor(endTime);
+        projectionsMap[u.id] = addDays(dataInicio, daysNeeded);
+    });
+    
+    return projectionsMap;
+}
+
+function parseDateBR(str) {
+    if (!str) return null;
+    const parts = str.split('/');
+    if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    const ymd = str.split('-');
+    if (ymd.length === 3) {
+        return new Date(ymd[0], ymd[1] - 1, ymd[2]);
+    }
+    return null;
+}
+
+function formatDateBRDate(date) {
+    if (!date) return "-";
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
+function getUnitFrontExpectedDate(unit, frenteName, allProjections) {
+    const fData = unit.frontsData[frenteName] || {};
+    if (fData.concluido) {
+        return parseDateBR(fData.dataFinal);
+    }
+    const projMap = allProjections[frenteName] || {};
+    const projDateStr = projMap[unit.id];
+    if (projDateStr) {
+        return parseDateBR(convertDMYToYMD(projDateStr)) || parseDateBR(projDateStr);
+    }
+    return null;
+}
+
+function getMaterialsForUnitFront(unit, frenteName) {
+    if (!unit) return [];
+    const fData = unit.frontsData[frenteName] || {};
+    let materialsList = getMaterialsList(fData);
+
+    // If unit is on floor > 1 and has no materials, try to inherit from ground floor (floor 1)
+    if (materialsList.length === 0 && unit.floor > 1) {
+        const col = unit.unit.slice(-2);
+        const terreoUnit = projectState.units.find(u => u.tower === unit.tower && u.floor === 1 && u.unit.slice(-2) === col);
+        if (terreoUnit) {
+            const tData = terreoUnit.frontsData[frenteName] || {};
+            materialsList = getMaterialsList(tData).map(m => ({
+                ...m,
+                herdado: true,
+                terreoUnit: terreoUnit.unit
+            }));
+        }
+    }
+    return materialsList;
+}
+
+function renderWeeklyPlanningReport() {
+    const towerSelect = document.getElementById('rep-rep-tower');
+    const dateInput = document.getElementById('rep-rep-date');
+    const layoutContainer = document.getElementById('rep-tower-layout-container');
+    const grid = document.getElementById('rep-tower-grid');
+    const alertsContainer = document.getElementById('rep-alerts-container');
+    const alertsList = document.getElementById('rep-alerts-list');
+
+    if (!towerSelect || !dateInput || !layoutContainer || !grid || !alertsContainer || !alertsList) return;
+
+    const towerName = towerSelect.value;
+    if (!towerName) {
+        layoutContainer.classList.add('hidden');
+        alertsContainer.classList.add('hidden');
+        grid.innerHTML = '';
+        alertsList.innerHTML = '';
+        return;
+    }
+
+    layoutContainer.classList.remove('hidden');
+    alertsContainer.classList.remove('hidden');
+
+    const refDate = new Date(dateInput.value + 'T12:00:00');
+    
+    // Calculate week start and end
+    const lastWeekStart = new Date(refDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const upcomingWeekEnd = new Date(refDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Build projections cache for all fronts
+    const allProjections = {};
+    FRENTES_SEQUENCIA.forEach(f => {
+        allProjections[f] = getProjectionsMapForService(f);
+    });
+
+    // 1. Render Tower Figure (Esquema de Torre)
+    grid.innerHTML = '';
+    const towerObj = projectState.towers.find(t => t.name === towerName);
+    const totalFloors = towerObj ? (towerObj.floors || 12) : 12;
+
+    // Filter units of selected tower
+    const towerUnits = projectState.units.filter(u => u.tower === towerName);
+
+    // Loop floors from top to bottom (térreo)
+    for (let f = totalFloors; f >= 1; f--) {
+        const row = document.createElement('div');
+        row.className = 'rep-tower-row';
+
+        const label = document.createElement('div');
+        label.className = 'rep-tower-label';
+        label.textContent = f === 1 ? 'Térreo (Pav 1)' : `${f}º Pavimento`;
+        row.appendChild(label);
+
+        const cellsContainer = document.createElement('div');
+        cellsContainer.className = 'rep-tower-cells';
+
+        const floorUnits = towerUnits.filter(u => u.floor === f);
+        floorUnits.sort((a, b) => a.unit.localeCompare(b.unit));
+
+        floorUnits.forEach(u => {
+            const cell = document.createElement('div');
+            cell.className = 'rep-tower-cell';
+            cell.textContent = u.unit;
+            cell.dataset.unitId = u.id;
+
+            // Determine cell status for color coding
+            let statusClass = 'alert-none';
+            
+            // Check if any service was executed in the last week
+            let hasExecutedLastWeek = false;
+            let hasUrgentAlert = false;
+            let hasModerateAlert = false;
+
+            FRENTES_SEQUENCIA.forEach(frente => {
+                const fData = u.frontsData[frente] || {};
+                const expectedDate = getUnitFrontExpectedDate(u, frente, allProjections);
+                if (expectedDate) {
+                    if (fData.concluido) {
+                        if (expectedDate >= lastWeekStart && expectedDate <= refDate) {
+                            hasExecutedLastWeek = true;
+                        }
+                    } else {
+                        // Pending. Find projected start date
+                        const fConfig = projectState.frentesConfig[frente] || {};
+                        const cap = parseFloat(fConfig.capacidadeDia) || 1;
+                        let duration = 1 / cap;
+                        if (fData.duracaoProj && parseFloat(fData.duracaoProj) > 0) {
+                            duration = parseFloat(fData.duracaoProj);
+                        }
+                        const startDate = new Date(expectedDate.getTime() - duration * 24 * 60 * 60 * 1000);
+                        const daysDiff = (startDate.getTime() - refDate.getTime()) / (24 * 60 * 60 * 1000);
+                        
+                        if (daysDiff >= 0 && daysDiff <= 7) {
+                            if (daysDiff <= 2) {
+                                hasUrgentAlert = true;
+                            } else if (daysDiff <= 5) {
+                                hasModerateAlert = true;
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (hasUrgentAlert) statusClass = 'alert-urgent';
+            else if (hasModerateAlert) statusClass = 'alert-moderate';
+            else if (hasExecutedLastWeek) statusClass = 'executed';
+
+            cell.classList.add(statusClass);
+
+            cell.addEventListener('click', () => {
+                openEditPlanningMaterialsModal(u.id);
+            });
+
+            cellsContainer.appendChild(cell);
+        });
+
+        row.appendChild(cellsContainer);
+        grid.appendChild(row);
+    }
+
+    // 2. Generate Alerts List
+    alertsList.innerHTML = '';
+    let alertCount = 0;
+
+    towerUnits.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(frente => {
+            const fData = u.frontsData[frente] || {};
+            if (fData.concluido) return;
+
+            const expectedDate = getUnitFrontExpectedDate(u, frente, allProjections);
+            if (!expectedDate) return;
+
+            const fConfig = projectState.frentesConfig[frente] || {};
+            const cap = parseFloat(fConfig.capacidadeDia) || 1;
+            let duration = 1 / cap;
+            if (fData.duracaoProj && parseFloat(fData.duracaoProj) > 0) {
+                duration = parseFloat(fData.duracaoProj);
+            }
+            const startDate = new Date(expectedDate.getTime() - duration * 24 * 60 * 60 * 1000);
+            const daysDiff = (startDate.getTime() - refDate.getTime()) / (24 * 60 * 60 * 1000);
+
+            if (daysDiff >= 0 && daysDiff <= 5) {
+                alertCount++;
+                const isUrgent = daysDiff <= 2;
+                const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000);
+
+                const alertItem = document.createElement('div');
+                alertItem.className = `rep-alert-item ${isUrgent ? 'urgent' : 'moderate'}`;
+                alertItem.innerHTML = `
+                    <i class="fa ${isUrgent ? 'fa-triangle-exclamation text-danger' : 'fa-circle-exclamation text-warning'}" style="font-size: 1.1rem;"></i>
+                    <div style="flex: 1;">
+                        <strong>Apto ${u.unit}</strong> - Frente <strong>${frente}</strong> inicia em <strong>${formatDateBRDate(startDate)}</strong> (${Math.ceil(daysDiff)} dias).
+                        <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">
+                            Prazo limite para abastecer material: <strong class="${isUrgent ? 'text-danger' : 'text-warning'}">${formatDateBRDate(limitDate)}</strong> (2 a 5 dias antes).
+                        </span>
+                    </div>
+                `;
+                alertsList.appendChild(alertItem);
+            }
+        });
+    });
+
+    if (alertCount === 0) {
+        alertsList.innerHTML = `
+            <div class="empty-state" style="padding: 1.5rem 0;">
+                <i class="fa fa-circle-check text-success"></i>
+                <p>Nenhum alerta de abastecimento para esta semana.</p>
+            </div>
+        `;
+    }
+}
+
+function openEditPlanningMaterialsModal(unitId) {
+    const u = projectState.units.find(x => x.id === unitId);
+    if (!u) return;
+
+    document.getElementById('modal-edit-rep-unit-name').textContent = u.unit;
+    document.getElementById('modal-edit-rep-unit-id').value = u.id;
+
+    const listContainer = document.getElementById('modal-edit-rep-materials-list');
+    listContainer.innerHTML = '';
+
+    // Show materials for active front and quality fronts (VH, VE, VQ, VA)
+    const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || 'VQ';
+    const frontsToShow = Array.from(new Set([activeFrontName, 'VH', 'VE', 'VQ', 'VA']));
+
+    frontsToShow.forEach(frenteName => {
+        const fData = u.frontsData[frenteName] || {};
+        const materials = getMaterialsForUnitFront(u, frenteName);
+
+        const group = document.createElement('div');
+        group.style.border = '1px solid var(--border-color)';
+        group.style.borderRadius = '6px';
+        group.style.padding = '10px';
+        group.style.background = 'rgba(0,0,0,0.1)';
+
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.marginBottom = '8px';
+        header.style.borderBottom = '1px solid var(--border-color)';
+        header.style.paddingBottom = '4px';
+
+        header.innerHTML = `
+            <strong style="color: var(--primary-color); font-size: 0.9rem;">${frenteName}</strong>
+            <button type="button" class="btn btn-outline btn-xs btn-add-editor-material" data-frente="${frenteName}">
+                <i class="fa fa-plus"></i> Insumo
+            </button>
+        `;
+
+        group.appendChild(header);
+
+        const rowsContainer = document.createElement('div');
+        rowsContainer.className = 'editor-rows-container';
+        rowsContainer.dataset.frente = frenteName;
+
+        const renderRows = () => {
+            rowsContainer.innerHTML = '';
+            if (materials.length === 0) {
+                rowsContainer.innerHTML = '<span class="text-muted" style="font-size: 0.8rem; padding: 4px 0; display: block;">Nenhum insumo planejado.</span>';
+                return;
+            }
+
+            materials.forEach((m, idx) => {
+                const row = document.createElement('div');
+                row.className = 'material-editor-row';
+                row.innerHTML = `
+                    <input type="text" class="input-glow edit-mat-name" value="${m.material || ''}" placeholder="Nome do Material" style="font-size: 0.8rem; padding: 4px 8px;" required>
+                    <input type="number" class="input-glow edit-mat-qtd" value="${m.quantidade || ''}" placeholder="Qtd" style="font-size: 0.8rem; padding: 4px 8px;" min="0" step="any" required>
+                    <input type="text" class="input-glow edit-mat-tipo" value="${m.tipo || ''}" placeholder="Tipo" style="font-size: 0.8rem; padding: 4px 8px;">
+                    <input type="text" class="input-glow edit-mat-subtipo" value="${m.subtipo || ''}" placeholder="Subtipo/Formato" style="font-size: 0.8rem; padding: 4px 8px;">
+                    <button type="button" class="btn btn-danger btn-xs btn-remove-editor-material" style="padding: 4px 6px;"><i class="fa fa-trash"></i></button>
+                `;
+
+                // If inherited from ground floor, show alert
+                if (m.herdado) {
+                    const note = document.createElement('div');
+                    note.style.gridColumn = 'span 5';
+                    note.style.fontSize = '0.7rem';
+                    note.style.color = 'var(--status-agendado)';
+                    note.style.marginTop = '-4px';
+                    note.style.marginBottom = '4px';
+                    note.textContent = `💡 Baseline herdada do Térreo (Apto ${m.terreoUnit}). Salvar para customizar para esta unidade.`;
+                    row.insertBefore(note, row.firstChild);
+                }
+
+                row.querySelector('.btn-remove-editor-material').addEventListener('click', () => {
+                    materials.splice(idx, 1);
+                    renderRows();
+                });
+
+                rowsContainer.appendChild(row);
+            });
+        };
+
+        group.querySelector('.btn-add-editor-material').addEventListener('click', () => {
+            materials.push({
+                material: "",
+                quantidade: 1,
+                tipo: "",
+                subtipo: "",
+                observacao: "Customização Kit Exclusivita",
+                data_lancamento: new Date().toLocaleDateString('pt-BR')
+            });
+            renderRows();
+        });
+
+        renderRows();
+        group.appendChild(rowsContainer);
+        listContainer.appendChild(group);
+    });
+
+    document.getElementById('modal-edit-rep-materials').classList.remove('hidden');
+}
+
+async function handleSaveWeeklyMaterials(e) {
+    e.preventDefault();
+    const unitId = document.getElementById('modal-edit-rep-unit-id').value;
+    const u = projectState.units.find(x => x.id === unitId);
+    if (!u) return;
+
+    const listContainer = document.getElementById('modal-edit-rep-materials-list');
+    const groups = listContainer.querySelectorAll('.editor-rows-container');
+
+    groups.forEach(group => {
+        const frenteName = group.dataset.frente;
+        const rows = group.querySelectorAll('.material-editor-row');
+        const list = [];
+
+        rows.forEach(row => {
+            const name = row.querySelector('.edit-mat-name').value.trim();
+            const qtd = parseFloat(row.querySelector('.edit-mat-qtd').value) || 0;
+            const tipo = row.querySelector('.edit-mat-tipo').value.trim();
+            const subtipo = row.querySelector('.edit-mat-subtipo').value.trim();
+
+            if (name) {
+                list.push({
+                    material: name,
+                    quantidade: qtd,
+                    tipo: tipo,
+                    subtipo: subtipo,
+                    observacao: "Customização Kit Exclusivita",
+                    data_lancamento: new Date().toLocaleDateString('pt-BR')
+                });
+            }
+        });
+
+        if (!u.frontsData[frenteName]) {
+            u.frontsData[frenteName] = {
+                responsavel: "",
+                dataInicio: "",
+                dataFinal: "",
+                duracaoProj: 0,
+                duracaoReal: 0,
+                concluido: false,
+                materials: {}
+            };
+        }
+        u.frontsData[frenteName].materials = list;
+    });
+
+    await saveState();
+    document.getElementById('modal-edit-rep-materials').classList.add('hidden');
+    alert("Insumos planejados salvos com sucesso!");
+    renderWeeklyPlanningReport();
+}
+
+function exportWeeklyGoals() {
+    const towerSelect = document.getElementById('rep-rep-tower');
+    const dateInput = document.getElementById('rep-rep-date');
+    if (!towerSelect || !dateInput) return;
+
+    const towerName = towerSelect.value;
+    if (!towerName) {
+        alert("Por favor, selecione uma torre para exportar.");
+        return;
+    }
+
+    const refDate = new Date(dateInput.value + 'T12:00:00');
+    const lastWeekStart = new Date(refDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const upcomingWeekEnd = new Date(refDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const allProjections = {};
+    FRENTES_SEQUENCIA.forEach(f => {
+        allProjections[f] = getProjectionsMapForService(f);
+    });
+
+    const csvRows = [
+        ["Torre", "Unidade", "Pavimento", "Frente de Servico", "Responsavel", "Status", "Data de Execucao (Real/Prevista)"]
+    ];
+
+    const towerUnits = projectState.units.filter(u => u.tower === towerName);
+
+    towerUnits.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(frente => {
+            const fData = u.frontsData[frente] || {};
+            const expectedDate = getUnitFrontExpectedDate(u, frente, allProjections);
+            if (!expectedDate) return;
+
+            if (fData.concluido) {
+                if (expectedDate >= lastWeekStart && expectedDate <= refDate) {
+                    csvRows.push([
+                        u.tower,
+                        u.unit,
+                        u.floor + "o Pav",
+                        frente,
+                        fData.responsavel || "-",
+                        "EXECUTADO NA ULTIMA SEMANA",
+                        fData.dataFinal
+                    ]);
+                }
+            } else {
+                if (expectedDate >= refDate && expectedDate <= upcomingWeekEnd) {
+                    csvRows.push([
+                        u.tower,
+                        u.unit,
+                        u.floor + "o Pav",
+                        frente,
+                        "-",
+                        "PREVISTO PARA A SEMANA",
+                        formatDateBRDate(expectedDate)
+                    ]);
+                }
+            }
+        });
+    });
+
+    downloadCSV(csvRows, `meta_semanal_${towerName.replace(/\s+/g, '_')}.csv`);
+}
+
+function exportWeeklySupply() {
+    const towerSelect = document.getElementById('rep-rep-tower');
+    const dateInput = document.getElementById('rep-rep-date');
+    if (!towerSelect || !dateInput) return;
+
+    const towerName = towerSelect.value;
+    if (!towerName) {
+        alert("Por favor, selecione uma torre para exportar.");
+        return;
+    }
+
+    const refDate = new Date(dateInput.value + 'T12:00:00');
+    const lastWeekStart = new Date(refDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const upcomingWeekEnd = new Date(refDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const allProjections = {};
+    FRENTES_SEQUENCIA.forEach(f => {
+        allProjections[f] = getProjectionsMapForService(f);
+    });
+
+    const csvRows = [
+        ["Torre", "Unidade", "Frente de Servico", "Material", "Tipo", "Subtipo/Formato", "Quantidade", "Status Abastecimento", "Data Limite Abastecimento (Prazo)"]
+    ];
+
+    const towerUnits = projectState.units.filter(u => u.tower === towerName);
+
+    towerUnits.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(frente => {
+            const fData = u.frontsData[frente] || {};
+            const expectedDate = getUnitFrontExpectedDate(u, frente, allProjections);
+            if (!expectedDate) return;
+
+            let statusAbast = "";
+            let limitDateStr = "-";
+
+            if (fData.concluido) {
+                if (expectedDate >= lastWeekStart && expectedDate <= refDate) {
+                    statusAbast = "SUBIDO NA ULTIMA SEMANA";
+                }
+            } else {
+                if (expectedDate >= refDate && expectedDate <= upcomingWeekEnd) {
+                    statusAbast = "PROGRAMADO PARA SUBIR";
+                    
+                    const fConfig = projectState.frentesConfig[frente] || {};
+                    const cap = parseFloat(fConfig.capacidadeDia) || 1;
+                    let duration = 1 / cap;
+                    if (fData.duracaoProj && parseFloat(fData.duracaoProj) > 0) {
+                        duration = parseFloat(fData.duracaoProj);
+                    }
+                    const startDate = new Date(expectedDate.getTime() - duration * 24 * 60 * 60 * 1000);
+                    const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000);
+                    limitDateStr = formatDateBRDate(limitDate);
+                }
+            }
+
+            if (statusAbast) {
+                const materials = getMaterialsForUnitFront(u, frente);
+                if (materials.length > 0) {
+                    materials.forEach(m => {
+                        csvRows.push([
+                            u.tower,
+                            u.unit,
+                            frente,
+                            m.material,
+                            m.tipo || "-",
+                            m.subtipo || "-",
+                            m.quantidade,
+                            statusAbast,
+                            limitDateStr
+                        ]);
+                    });
+                } else {
+                    csvRows.push([
+                        u.tower,
+                        u.unit,
+                        frente,
+                        "Nenhum material cadastrado",
+                        "-",
+                        "-",
+                        "0",
+                        statusAbast,
+                        limitDateStr
+                    ]);
+                }
+            }
+        });
+    });
+
+    downloadCSV(csvRows, `abastecimento_material_${towerName.replace(/\s+/g, '_')}.csv`);
+}
+
+function downloadCSV(csvRows, filename) {
+    const csvContent = csvRows.map(row => row.map(cell => {
+        if (cell === null || cell === undefined) cell = "";
+        let val = String(cell);
+        val = val.replace(/"/g, '""');
+        if (val.includes(',') || val.includes('\n') || val.includes('"')) {
+            val = `"${val}"`;
+        }
+        return val;
+    }).join(",")).join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
