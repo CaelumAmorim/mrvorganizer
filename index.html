@@ -741,6 +741,8 @@
                                         <th>Execução</th>
                                         <th>Dificuldade</th>
                                         <th>Aprovação</th>
+                                        <th>Data Início</th>
+                                        <th>Data Fim</th>
                                         <th>Ações</th>
                                     </tr>
                                     <tr class="rep-filter-header-row" style="background: rgba(0,0,0,0.1);">
@@ -755,6 +757,8 @@
                                         <th><input type="text" id="rep-col-filter-exec" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th><input type="text" id="rep-col-filter-dificuldade" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th><input type="text" id="rep-col-filter-app" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-data-inicio" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-data-fim" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -973,52 +977,131 @@
                             <!-- Sub-Painel 2: Planilha de Lançamento Excel -->
                             <div id="modal-rep-sub-excel" class="modal-tab-panel">
                                 <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem; font-style: italic;">
-                                    Cole colunas do Excel diretamente nos campos abaixo (cada linha preenchida criará uma nova reprova correspondente, máx. 100 itens).
+                                    Copie e cole colunas inteiras do Excel nos passos correspondentes (máx. 100 itens). O caractere "x" será tratado como campo vazio.
                                 </p>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">1. Descrição da Reprova (Obrigatório)</label>
-                                        <textarea id="bulk-rep-desc" rows="8" placeholder="Cole a coluna de reprova..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">2. Local / Cômodo</label>
+                                
+                                <div class="wizard-steps-header" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                                    <span class="wizard-step-indicator active" data-step="1" style="cursor: pointer;">1. Cômodo</span>
+                                    <span class="wizard-step-indicator" data-step="2" style="cursor: pointer;">2. Serviço</span>
+                                    <span class="wizard-step-indicator" data-step="3" style="cursor: pointer;">3. Descrição</span>
+                                    <span class="wizard-step-indicator" data-step="4" style="cursor: pointer;">4. Resp.</span>
+                                    <span class="wizard-step-indicator" data-step="5" style="cursor: pointer;">5. Execução</span>
+                                    <span class="wizard-step-indicator" data-step="6" style="cursor: pointer;">6. Dif.</span>
+                                    <span class="wizard-step-indicator" data-step="7" style="cursor: pointer;">7. Aprovação</span>
+                                    <span class="wizard-step-indicator" data-step="8" style="cursor: pointer;">8. Início</span>
+                                    <span class="wizard-step-indicator" data-step="9" style="cursor: pointer;">9. Fim</span>
+                                    <span class="wizard-step-indicator" data-step="10" style="cursor: pointer;">10. Insumo</span>
+                                    <span class="wizard-step-indicator" data-step="11" style="cursor: pointer;">11. Qtd.</span>
+                                    <span class="wizard-step-indicator" data-step="12" style="cursor: pointer;">12. Tipo Mat.</span>
+                                    <span class="wizard-step-indicator" data-step="13" style="cursor: pointer;">13. Subtipo</span>
+                                </div>
+
+                                <div id="wizard-panels-container">
+                                    <!-- Passo 1: Local / Cômodo -->
+                                    <div class="wizard-step-panel" data-step="1">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">1. Cômodo / Local da Falha</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o local de cada item (Ex: Cozinha, Sala de Estar, Banheiro 1, etc.).</p>
                                         <textarea id="bulk-rep-local" rows="8" placeholder="Cozinha&#10;Sala de Estar&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
                                     </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">3. Tipo de Serviço</label>
+
+                                    <!-- Passo 2: Tipo de Serviço -->
+                                    <div class="wizard-step-panel hidden" data-step="2">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">2. Tipo de Serviço</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o tipo de serviço (Ex: Piso, Rejunte, Laminado, Hidráulica, Elétrica, Pintura, Check list, Limpeza).</p>
                                         <textarea id="bulk-rep-servico" rows="8" placeholder="Piso&#10;Pintura&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
                                     </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">4. Resp. Correção</label>
+
+                                    <!-- Passo 3: Descrição da Reprova -->
+                                    <div class="wizard-step-panel hidden" data-step="3">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">3. Descrição Detalhada da Reprova (Obrigatório)</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o detalhamento de cada reprova (Ex: Piso quebrado na cozinha, Azulejo fissurado na cozinha, etc.).</p>
+                                        <textarea id="bulk-rep-desc" rows="8" placeholder="Cole a coluna de descrições aqui..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 4: Resp. Correção -->
+                                    <div class="wizard-step-panel hidden" data-step="4">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">4. Responsável pela Correção</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o responsável por executar a correção (Ex: Dilaércio, Ivan, Aguinaldo, etc.).</p>
                                         <textarea id="bulk-rep-resp" rows="8" placeholder="Dilaércio&#10;Ivan&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
                                     </div>
+
+                                    <!-- Passo 5: Status Execução -->
+                                    <div class="wizard-step-panel hidden" data-step="5">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">5. Status de Execução</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o status de execução (Ex: PENDENTE, EXECUTANDO, CONCLUÍDO).</p>
+                                        <textarea id="bulk-rep-exec" rows="8" placeholder="PENDENTE&#10;EXECUTANDO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 6: Dificuldade -->
+                                    <div class="wizard-step-panel hidden" data-step="6">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">6. Dificuldade da Falha</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o grau de dificuldade (Ex: EASY, NORMAL, HARD).</p>
+                                        <textarea id="bulk-rep-dificuldade" rows="8" placeholder="NORMAL&#10;HARD&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 7: Status Aprovação -->
+                                    <div class="wizard-step-panel hidden" data-step="7">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">7. Status de Aprovação</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com o status de aprovação de qualidade (Ex: REPROVADO, APROVADO).</p>
+                                        <textarea id="bulk-rep-app" rows="8" placeholder="REPROVADO&#10;REPROVADO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 8: Data de Início -->
+                                    <div class="wizard-step-panel hidden" data-step="8">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">8. Data de Início</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com as datas de início da falha (Ex: 20/05/2026).</p>
+                                        <textarea id="bulk-rep-data-inicio" rows="8" placeholder="20/05/2026&#10;22/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 9: Data Final -->
+                                    <div class="wizard-step-panel hidden" data-step="9">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">9. Data Final / Resolução</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna com as datas em que foram resolvidas (Ex: 25/05/2026).</p>
+                                        <textarea id="bulk-rep-data-fim" rows="8" placeholder="25/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 10: Insumo / Material -->
+                                    <div class="wizard-step-panel hidden" data-step="10">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">10. Insumo / Material Necessário</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna de insumos/materiais (Ex: Piso Cerâmico, Argamassa, ou 'x' caso não use material).</p>
+                                        <textarea id="bulk-rep-mat-nome" rows="8" placeholder="Piso Cerâmico&#10;Argamassa&#10;x&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 11: Quantidade -->
+                                    <div class="wizard-step-panel hidden" data-step="11">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">11. Quantidade do Insumo</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna de quantidades dos materiais (Ex: 2 m², 1 saco, ou 'x' se não houver).</p>
+                                        <textarea id="bulk-rep-mat-qtd" rows="8" placeholder="2 m²&#10;1 saco&#10;x&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 12: Tipo / Marca -->
+                                    <div class="wizard-step-panel hidden" data-step="12">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">12. Tipo / Marca do Material</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna de tipos/marcas (Ex: Cerâmica Elizabeth, Quartzolit, ou 'x' se não houver).</p>
+                                        <textarea id="bulk-rep-mat-tipo" rows="8" placeholder="Cerâmica Elizabeth&#10;Quartzolit&#10;x&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+
+                                    <!-- Passo 13: Subtipo / Formato -->
+                                    <div class="wizard-step-panel hidden" data-step="13">
+                                        <label style="font-size: 0.85rem; margin-bottom: 8px; display: block; font-weight: 600; color: var(--text-primary);">13. Subtipo / Formato do Material</label>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Cole a coluna de subtipos/formatos (Ex: 60x60, Cinza, ou 'x' se não houver).</p>
+                                        <textarea id="bulk-rep-mat-subtipo" rows="8" placeholder="60x60&#10;Cinza&#10;x&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
                                 </div>
-                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 10px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">5. Status Execução</label>
-                                        <textarea id="bulk-rep-exec" rows="5" placeholder="PENDENTE&#10;EXECUTANDO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">6. Dificuldade</label>
-                                        <textarea id="bulk-rep-dificuldade" rows="5" placeholder="NORMAL&#10;HARD&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">7. Status Aprovação</label>
-                                        <textarea id="bulk-rep-app" rows="5" placeholder="REPROVADO&#10;REPROVADO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">8. Data de Início</label>
-                                        <textarea id="bulk-rep-data-inicio" rows="5" placeholder="20/05/2026&#10;22/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">9. Data Final</label>
-                                        <textarea id="bulk-rep-data-fim" rows="5" placeholder="25/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
-                                    <button type="button" id="btn-modal-rep-bulk-save" class="btn btn-sm btn-danger" style="padding: 6px 16px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                                        <i class="fa fa-copy"></i> Agrupar e Salvar Itens (Lote)
+
+                                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <button type="button" id="btn-bulk-prev" class="btn btn-outline" style="padding: 6px 16px;">
+                                        <i class="fa fa-arrow-left"></i> Voltar
                                     </button>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;" id="bulk-wizard-progress-text">Passo 1 de 13</span>
+                                    <div>
+                                        <button type="button" id="btn-bulk-next" class="btn btn-primary" style="padding: 6px 16px;">
+                                            Avançar <i class="fa fa-arrow-right"></i>
+                                        </button>
+                                        <button type="button" id="btn-modal-rep-bulk-save" class="btn btn-danger hidden" style="padding: 6px 16px; font-weight: 600; align-items: center; gap: 6px;">
+                                            <i class="fa fa-copy"></i> Agrupar e Salvar (Lote)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

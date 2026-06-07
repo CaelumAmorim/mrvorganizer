@@ -16,6 +16,7 @@ let globalCollaborators = [];
 let activeModalMaterials = [];
 let currentReprovasPage = 1;
 const reprovasPageSize = 50;
+let bulkWizardCurrentStep = 1;
 
 const FRENTES_SEQUENCIA = [
     "REGULARIZAÇÃO DE PAREDE (gesso/argamassa)",
@@ -625,6 +626,10 @@ function setupEventListeners() {
             
             btn.classList.add('active');
             parent.querySelector(`#${tabId}`).classList.add('active');
+
+            if (tabId === 'modal-rep-sub-excel') {
+                updateBulkWizardStep(1);
+            }
         });
     });
 
@@ -689,6 +694,35 @@ function setupEventListeners() {
     if (btnSaveBulkRep) {
         btnSaveBulkRep.addEventListener('click', handleBulkReprovasSave);
     }
+
+    // Wizard navigation listeners
+    const btnBulkPrev = document.getElementById('btn-bulk-prev');
+    if (btnBulkPrev) {
+        btnBulkPrev.addEventListener('click', () => {
+            if (bulkWizardCurrentStep > 1) {
+                updateBulkWizardStep(bulkWizardCurrentStep - 1);
+            }
+        });
+    }
+
+    const btnBulkNext = document.getElementById('btn-bulk-next');
+    if (btnBulkNext) {
+        btnBulkNext.addEventListener('click', () => {
+            if (bulkWizardCurrentStep < 13) {
+                updateBulkWizardStep(bulkWizardCurrentStep + 1);
+            }
+        });
+    }
+
+    // Step indicators clicks
+    document.querySelectorAll('#modal-rep-sub-excel .wizard-step-indicator').forEach(indicator => {
+        indicator.addEventListener('click', () => {
+            const step = parseInt(indicator.dataset.step);
+            if (step >= 1 && step <= 13) {
+                updateBulkWizardStep(step);
+            }
+        });
+    });
 
     // Filter Reprovas table changes (Reset to page 1 on filter change)
     document.getElementById('filter-rep-tower').addEventListener('change', () => { currentReprovasPage = 1; renderReprovasPage(); });
@@ -2003,7 +2037,9 @@ function renderReprovasPage() {
         material: (document.getElementById('rep-col-filter-material')?.value || '').toLowerCase().trim(),
         qtd: (document.getElementById('rep-col-filter-qtd')?.value || '').toLowerCase().trim(),
         resp: (document.getElementById('rep-col-filter-resp')?.value || '').toLowerCase().trim(),
-        status: (document.getElementById('rep-col-filter-status')?.value || '').toLowerCase().trim()
+        status: (document.getElementById('rep-col-filter-status')?.value || '').toLowerCase().trim(),
+        data_inicio: (document.getElementById('rep-col-filter-data-inicio')?.value || '').toLowerCase().trim(),
+        data_fim: (document.getElementById('rep-col-filter-data-fim')?.value || '').toLowerCase().trim()
     };
 
     if (colFilters.tower) {
@@ -2032,6 +2068,12 @@ function renderReprovasPage() {
     }
     if (colFilters.status) {
         matchedReprovas = matchedReprovas.filter(m => m.reprova.status.toLowerCase().includes(colFilters.status));
+    }
+    if (colFilters.data_inicio) {
+        matchedReprovas = matchedReprovas.filter(m => (m.reprova.data_inicio || '').toLowerCase().includes(colFilters.data_inicio));
+    }
+    if (colFilters.data_fim) {
+        matchedReprovas = matchedReprovas.filter(m => (m.reprova.data_fim || '').toLowerCase().includes(colFilters.data_fim));
     }
 
     const totalItems = matchedReprovas.length;
@@ -2113,6 +2155,8 @@ function renderReprovasPage() {
                     ${r.status_aprovacao || (r.status === 'Resolvido' ? 'APROVADO' : 'REPROVADO')}
                 </span>
             </td>
+            <td>${r.data_inicio || '-'}</td>
+            <td>${r.data_fim || '-'}</td>
             <td>
                 <div style="display: flex; gap: 6px; align-items: center;">
                 ${r.status === 'Pendente' ? `
@@ -3224,6 +3268,67 @@ function openEditReprovaModal(unitId, reprovaId) {
     modalAddReprova.classList.remove('hidden');
 }
 
+function updateBulkWizardStep(step) {
+    if (step < 1) step = 1;
+    if (step > 13) step = 13;
+    bulkWizardCurrentStep = step;
+
+    // Show/Hide panels
+    document.querySelectorAll('#modal-rep-sub-excel .wizard-step-panel').forEach(panel => {
+        const panelStep = parseInt(panel.dataset.step);
+        if (panelStep === bulkWizardCurrentStep) {
+            panel.classList.remove('hidden');
+        } else {
+            panel.classList.add('hidden');
+        }
+    });
+
+    // Update Indicators
+    document.querySelectorAll('#modal-rep-sub-excel .wizard-step-indicator').forEach(ind => {
+        const indStep = parseInt(ind.dataset.step);
+        if (indStep === bulkWizardCurrentStep) {
+            ind.classList.add('active');
+        } else {
+            ind.classList.remove('active');
+        }
+    });
+
+    // Update Progress Text
+    const progressText = document.getElementById('bulk-wizard-progress-text');
+    if (progressText) {
+        progressText.textContent = `Passo ${bulkWizardCurrentStep} de 13`;
+    }
+
+    // Update Buttons
+    const btnPrev = document.getElementById('btn-bulk-prev');
+    const btnNext = document.getElementById('btn-bulk-next');
+    const btnSave = document.getElementById('btn-modal-rep-bulk-save');
+
+    if (btnPrev) {
+        if (bulkWizardCurrentStep === 1) {
+            btnPrev.disabled = true;
+            btnPrev.style.opacity = '0.5';
+            btnPrev.style.pointerEvents = 'none';
+        } else {
+            btnPrev.disabled = false;
+            btnPrev.style.opacity = '1';
+            btnPrev.style.pointerEvents = 'auto';
+        }
+    }
+
+    if (btnNext && btnSave) {
+        if (bulkWizardCurrentStep === 13) {
+            btnNext.classList.add('hidden');
+            btnSave.classList.remove('hidden');
+            btnSave.style.display = 'flex';
+        } else {
+            btnNext.classList.remove('hidden');
+            btnSave.classList.add('hidden');
+            btnSave.style.display = 'none';
+        }
+    }
+}
+
 async function handleBulkReprovasSave() {
     const modalUnitTitleEl = document.getElementById('modal-unit-title');
     const unitId = modalUnitTitleEl.dataset.unitId;
@@ -3245,14 +3350,25 @@ async function handleBulkReprovasSave() {
     const datesInicio = document.getElementById('bulk-rep-data-inicio').value.split('\n').map(x => x.trim());
     const datesFim = document.getElementById('bulk-rep-data-fim').value.split('\n').map(x => x.trim());
     
+    const matNomes = document.getElementById('bulk-rep-mat-nome').value.split('\n').map(x => x.trim());
+    const matQtds = document.getElementById('bulk-rep-mat-qtd').value.split('\n').map(x => x.trim());
+    const matTipos = document.getElementById('bulk-rep-mat-tipo').value.split('\n').map(x => x.trim());
+    const matSubtipos = document.getElementById('bulk-rep-mat-subtipo').value.split('\n').map(x => x.trim());
+    
     const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ";
     let count = 0;
     
     const totalRows = Math.min(100, descs.length);
     
+    function cleanExcelPlaceholder(val) {
+        if (!val) return "";
+        const trimmed = val.trim();
+        if (trimmed.toLowerCase() === "x") return "";
+        return trimmed;
+    }
+    
     function formatPastedDate(dStr) {
-        if (!dStr) return "";
-        const clean = dStr.trim();
+        const clean = cleanExcelPlaceholder(dStr);
         if (!clean) return "";
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return clean;
         if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
@@ -3263,15 +3379,15 @@ async function handleBulkReprovasSave() {
     }
     
     for (let i = 0; i < totalRows; i++) {
-        const desc = descs[i];
+        const desc = cleanExcelPlaceholder(descs[i]);
         if (!desc) continue;
         
-        const local = locals[i] || "Apartamento";
-        const servico = servicos[i] || activeFrontName;
-        const resp = resps[i] || "Equipe Qualidade";
-        const execStatus = (execs[i] || "PENDENTE").toUpperCase();
-        const difficulty = (dificults[i] || "NORMAL").toUpperCase();
-        const appStatus = (apps[i] || "REPROVADO").toUpperCase();
+        const local = cleanExcelPlaceholder(locals[i]) || "Apartamento";
+        const servico = cleanExcelPlaceholder(servicos[i]) || activeFrontName;
+        const resp = cleanExcelPlaceholder(resps[i]) || "Equipe Qualidade";
+        const execStatus = (cleanExcelPlaceholder(execs[i]) || "PENDENTE").toUpperCase();
+        const difficulty = (cleanExcelPlaceholder(dificults[i]) || "NORMAL").toUpperCase();
+        const appStatus = (cleanExcelPlaceholder(apps[i]) || "REPROVADO").toUpperCase();
         
         let dInicio = formatPastedDate(datesInicio[i]);
         if (!dInicio) {
@@ -3283,15 +3399,20 @@ async function handleBulkReprovasSave() {
             dFim = new Date().toLocaleDateString('pt-BR');
         }
         
+        const matNome = cleanExcelPlaceholder(matNomes[i]);
+        const matQtd = cleanExcelPlaceholder(matQtds[i]);
+        const matTipo = cleanExcelPlaceholder(matTipos[i]);
+        const matSubtipo = cleanExcelPlaceholder(matSubtipos[i]);
+        
         const reprovaItem = {
             id: uuidv4(),
             servico: servico,
             local: local,
             descricao: desc,
-            material: "",
-            tipo_material: "",
-            subtipo_material: "",
-            quantidade_material: 0,
+            material: matNome,
+            tipo_material: matTipo,
+            subtipo_material: matSubtipo,
+            quantidade_material: matQtd,
             responsavel: resp,
             status: appStatus === 'APROVADO' ? 'Resolvido' : 'Pendente',
             data_inicio: dInicio,
@@ -3322,6 +3443,10 @@ async function handleBulkReprovasSave() {
     document.getElementById('bulk-rep-app').value = '';
     document.getElementById('bulk-rep-data-inicio').value = '';
     document.getElementById('bulk-rep-data-fim').value = '';
+    document.getElementById('bulk-rep-mat-nome').value = '';
+    document.getElementById('bulk-rep-mat-qtd').value = '';
+    document.getElementById('bulk-rep-mat-tipo').value = '';
+    document.getElementById('bulk-rep-mat-subtipo').value = '';
     
     // Refresh modal and view
     openUnitDetailsModal(u.id);
@@ -3347,29 +3472,28 @@ function checkAndAdvanceQualityFront(unit, frontName) {
     const hasPending = unit.reprovas.some(r => r.servico === frontName && r.status === 'Pendente');
     
     if (!hasPending) {
-        // Mark the current quality front as concluded
+        // Mark the current quality front as NOT concluded (requires manual approval/signature)
         if (!unit.frontsData[frontName]) {
             unit.frontsData[frontName] = {};
         }
         const fData = unit.frontsData[frontName];
-        fData.concluido = true;
-        if (!fData.responsavel) fData.responsavel = "Equipe Qualidade";
-        if (!fData.dataFinal) fData.dataFinal = new Date().toLocaleDateString('pt-BR');
+        fData.concluido = false;
         
-        // Advance activeFrontIndex
-        unit.activeFrontIndex++;
+        // Reset status_va to LIBERADO so it returns to being inspectable
+        if (frontName === 'VA') {
+            unit.status_va = 'LIBERADO';
+        }
         
         // Update general status
-        if (unit.activeFrontIndex === FRENTES_SEQUENCIA.length) {
-            unit.status_geral = 'Aprovado';
-        } else {
-            unit.status_geral = 'Ativo';
-        }
+        unit.status_geral = 'Ativo';
     } else {
         // If there are pending reprovas, the unit status must be "Reprovado"
         unit.status_geral = 'Reprovado';
         if (unit.frontsData[frontName]) {
             unit.frontsData[frontName].concluido = false;
+        }
+        if (frontName === 'VA') {
+            unit.status_va = 'REPROVADO';
         }
     }
 }
