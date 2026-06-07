@@ -668,6 +668,7 @@ function setupEventListeners() {
         document.querySelectorAll('.legend-item').forEach(li => li.classList.remove('filtered-active'));
         document.getElementById('btn-clear-map-filter').classList.add('hidden');
         renderTowers();
+        renderSummaryStats();
     });
 
     // Form Update Front
@@ -1495,6 +1496,7 @@ function renderLegendFilters() {
                 document.getElementById('btn-clear-map-filter').classList.remove('hidden');
             }
             renderTowers();
+            renderSummaryStats();
         });
         
         container.appendChild(item);
@@ -1521,6 +1523,7 @@ function renderLegendFilters() {
             document.getElementById('btn-clear-map-filter').classList.remove('hidden');
         }
         renderTowers();
+        renderSummaryStats();
     });
     container.appendChild(doneItem);
 }
