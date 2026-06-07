@@ -242,6 +242,7 @@
                 <div class="user-info">
                     <h4 id="user-display-name">Nome do Usuário</h4>
                     <span id="user-display-role" class="badge">Nível</span>
+                    <a href="#" id="btn-change-password-trigger" style="font-size: 0.72rem; color: var(--primary-color); text-decoration: none; margin-top: 4px; display: inline-block; cursor: pointer; font-weight: 500;"><i class="fa fa-key" style="font-size: 0.7rem;"></i> Alterar Senha</a>
                 </div>
             </div>
 
@@ -1218,6 +1219,45 @@
             <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end;">
                 <button type="button" class="btn btn-outline modal-close">Fechar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ALTERAR SENHA -->
+    <div id="modal-change-password" class="modal-overlay hidden">
+        <div class="modal-card" style="width: 400px; max-width: 95%;">
+            <div class="modal-header">
+                <h2><i class="fa fa-key"></i> Alterar Minha Senha</h2>
+                <button class="btn-icon modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <form id="form-change-password">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="ch-current-password">Senha Atual</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="ch-current-password" required style="width: 100%;">
+                            <button type="button" id="toggle-ch-curr-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ch-new-password">Nova Senha</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="ch-new-password" required style="width: 100%;">
+                            <button type="button" id="toggle-ch-new-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ch-confirm-password">Confirmar Nova Senha</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="ch-confirm-password" required style="width: 100%;">
+                            <button type="button" id="toggle-ch-conf-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Senha</button>
+                </div>
+            </form>
         </div>
     </div>
 

@@ -302,6 +302,98 @@ function setupEventListeners() {
         });
     }
 
+    // Change Password trigger
+    const btnChangePasswordTrigger = document.getElementById('btn-change-password-trigger');
+    const modalChangePassword = document.getElementById('modal-change-password');
+    const formChangePassword = document.getElementById('form-change-password');
+    
+    if (btnChangePasswordTrigger && modalChangePassword) {
+        btnChangePasswordTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Reset input values
+            document.getElementById('ch-current-password').value = '';
+            document.getElementById('ch-new-password').value = '';
+            document.getElementById('ch-confirm-password').value = '';
+            // Reset types
+            document.getElementById('ch-current-password').type = 'password';
+            document.getElementById('ch-new-password').type = 'password';
+            document.getElementById('ch-confirm-password').type = 'password';
+            
+            const i1 = document.getElementById('toggle-ch-curr-password')?.querySelector('i');
+            const i2 = document.getElementById('toggle-ch-new-password')?.querySelector('i');
+            const i3 = document.getElementById('toggle-ch-conf-password')?.querySelector('i');
+            if (i1) i1.className = 'fa fa-eye';
+            if (i2) i2.className = 'fa fa-eye';
+            if (i3) i3.className = 'fa fa-eye';
+
+            modalChangePassword.classList.remove('hidden');
+        });
+    }
+
+    // Toggle password view icons for Change Password fields
+    setupPwdToggle('toggle-ch-curr-password', 'ch-current-password');
+    setupPwdToggle('toggle-ch-new-password', 'ch-new-password');
+    setupPwdToggle('toggle-ch-conf-password', 'ch-confirm-password');
+
+    function setupPwdToggle(btnId, inputId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        if (btn && input) {
+            btn.addEventListener('click', () => {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.querySelector('i').className = 'fa fa-eye-slash';
+                } else {
+                    input.type = 'password';
+                    btn.querySelector('i').className = 'fa fa-eye';
+                }
+            });
+        }
+    }
+
+    // Handle Change Password Form submit
+    if (formChangePassword) {
+        formChangePassword.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currPass = document.getElementById('ch-current-password').value;
+            const newPass = document.getElementById('ch-new-password').value;
+            const confPass = document.getElementById('ch-confirm-password').value;
+
+            if (!currentUser) {
+                alert("Nenhum usuário logado.");
+                return;
+            }
+
+            if (currentUser.password !== currPass) {
+                alert("A senha atual digitada está incorreta.");
+                return;
+            }
+
+            if (newPass !== confPass) {
+                alert("A nova senha e a confirmação não coincidem.");
+                return;
+            }
+
+            if (newPass.length < 4) {
+                alert("A nova senha deve possuir pelo menos 4 caracteres.");
+                return;
+            }
+
+            // Find current user object in state and update it
+            const userInState = projectState.users.find(u => u.username === currentUser.username);
+            if (userInState) {
+                userInState.password = newPass;
+                currentUser.password = newPass;
+                sessionStorage.setItem('mrv_current_user', JSON.stringify(currentUser));
+                await saveState();
+                alert("Senha alterada com sucesso!");
+                modalChangePassword.classList.add('hidden');
+            } else {
+                alert("Erro ao encontrar usuário no banco de dados local.");
+            }
+        });
+    }
+
     // Login Form Submit
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -809,10 +901,13 @@ function renderSummaryStats() {
     });
 
     const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * 12)) * 100) : 0;
+    const pctC = totalUnits > 0 ? (concluidas / totalUnits * 100).toFixed(1) : "0.0";
+    const pctR = totalUnits > 0 ? (reprovadas / totalUnits * 100).toFixed(1) : "0.0";
+    const pctA = totalUnits > 0 ? (ativas / totalUnits * 100).toFixed(1) : "0.0";
 
-    statConcluidos.textContent = concluidas;
-    statReprovados.textContent = reprovadas;
-    statAtivos.textContent = ativas;
+    statConcluidos.textContent = `${concluidas} (${pctC}%)`;
+    statReprovados.textContent = `${reprovadas} (${pctR}%)`;
+    statAtivos.textContent = `${ativas} (${pctA}%)`;
     statProgresso.textContent = `${percentGeral}%`;
 }
 
