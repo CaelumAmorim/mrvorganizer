@@ -734,7 +734,9 @@
                                         <th>Material Usado/Necessário</th>
                                         <th>Quantidade</th>
                                         <th>Responsável</th>
-                                        <th>Status</th>
+                                        <th>Execução</th>
+                                        <th>Dificuldade</th>
+                                        <th>Aprovação</th>
                                         <th>Ações</th>
                                     </tr>
                                     <tr class="rep-filter-header-row" style="background: rgba(0,0,0,0.1);">
@@ -746,7 +748,9 @@
                                         <th><input type="text" id="rep-col-filter-material" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th><input type="text" id="rep-col-filter-qtd" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th><input type="text" id="rep-col-filter-resp" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
-                                        <th><input type="text" id="rep-col-filter-status" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-exec" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-dificuldade" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-app" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -1083,6 +1087,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="button" id="btn-update-na" class="btn btn-outline" style="border-color: var(--status-bloqueado); color: var(--status-bloqueado);"><i class="fa fa-ban"></i> Não se Aplica</button>
                     <button type="button" id="btn-save-progress" class="btn btn-outline" style="border-color: var(--primary-color); color: var(--primary-color);"><i class="fa fa-floppy-disk"></i> Salvar Alterações</button>
                     <button type="submit" class="btn btn-primary"><i class="fa fa-circle-check"></i> Concluir Frente</button>
                 </div>
@@ -1124,6 +1129,35 @@
                     <div class="form-group">
                         <label for="rep-resp">Responsável pela Correção</label>
                         <input type="text" id="rep-resp" placeholder="Ex: Dilaércio, Aguinaldo, Ivan" required>
+                    </div>
+
+                    <input type="hidden" id="rep-edit-mode" value="false">
+                    <input type="hidden" id="rep-id">
+
+                    <div class="form-row">
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-exec-status">Status de Execução</label>
+                            <select id="rep-exec-status" required>
+                                <option value="PENDENTE" selected>PENDENTE</option>
+                                <option value="EXECUTANDO">EXECUTANDO</option>
+                                <option value="CONCLUÍDO">CONCLUÍDO</option>
+                            </select>
+                        </div>
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-dificuldade">Dificuldade</label>
+                            <select id="rep-dificuldade" required>
+                                <option value="EASY">EASY</option>
+                                <option value="NORMAL" selected>NORMAL</option>
+                                <option value="HARD">HARD</option>
+                            </select>
+                        </div>
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-app-status">Status de Aprovação</label>
+                            <select id="rep-app-status" required>
+                                <option value="REPROVADO" selected>REPROVADO</option>
+                                <option value="APROVADO">APROVADO</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Campos de materiais gastos para corrigir a reprova -->

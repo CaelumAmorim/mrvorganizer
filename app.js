@@ -676,6 +676,11 @@ function setupEventListeners() {
         });
     }
 
+    const btnUpdateNa = document.getElementById('btn-update-na');
+    if (btnUpdateNa) {
+        btnUpdateNa.addEventListener('click', handleUpdateNaClick);
+    }
+
     // Form Add Reprova
     document.getElementById('form-add-reprova').addEventListener('submit', handleAddReprovaSubmit);
 
@@ -1173,7 +1178,7 @@ function renderLegendFilters() {
     if (activeFilterFront === 'Concluido') { doneItem.classList.add('filtered-active'); }
     doneItem.innerHTML = `
         <span class="legend-color-dot" style="background-color: ${FRENTES_CORES.Concluido}"></span>
-        <span class="legend-text">Concluído (${doneUnits})</span>
+        <span class="legend-text">Entrega dos Sonhos (${doneUnits})</span>
     `;
     doneItem.addEventListener('click', () => {
         if (activeFilterFront === 'Concluido') {
@@ -1245,29 +1250,74 @@ function renderTowers() {
             
             const unitsRowContainer = row.querySelector('.units-row');
             
-            // Loop through apartments on this floor
-            for (let u = 1; u <= tConfig.unitsPerFloor; u++) {
-                const unitNum = `${f}` + String(u).padStart(2, '0');
+            // Check if this tower has any halls on this floor
+            const hasHallOnThisFloor = towerUnits.some(unit => unit.floor === f && unit.isHall);
+            
+            let unitsOrder = [];
+            if (hasHallOnThisFloor) {
+                // Cittá Splendore layout: 1 to 4, Hall, 5 to 8
+                for (let u = 1; u <= 4; u++) {
+                    unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+                }
+                const hallUnit = towerUnits.find(unit => unit.floor === f && unit.isHall);
+                if (hallUnit) {
+                    unitsOrder.push(hallUnit.unit);
+                } else {
+                    unitsOrder.push(`${f}º HALL`);
+                }
+                for (let u = 5; u <= 8; u++) {
+                    unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+                }
+            } else {
+                for (let u = 1; u <= tConfig.unitsPerFloor; u++) {
+                    unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+                }
+            }
+
+            unitsRowContainer.style.gridTemplateColumns = `repeat(${unitsOrder.length}, 1fr)`;
+
+            unitsOrder.forEach(unitNum => {
                 const matchedUnit = towerUnits.find(unit => unit.unit == unitNum && unit.floor == f);
-                
                 const cell = document.createElement('div');
                 cell.className = 'unit-cell';
                 
                 if (matchedUnit) {
+                    if (matchedUnit.isHall) {
+                        cell.style.borderRadius = '50%';
+                    }
+                    
                     const frontIndex = matchedUnit.activeFrontIndex;
                     let frontName = "";
                     let cellClass = "";
                     
                     if (frontIndex === FRENTES_SEQUENCIA.length) {
-                        frontName = "Concluido";
+                        frontName = "Entrega dos Sonhos";
                         cellClass = "c-concluido";
                     } else {
                         frontName = FRENTES_SEQUENCIA[frontIndex];
                         cellClass = `c-${frontName.toLowerCase().replace(/\s+/g, '')}`;
                     }
+
+                    // VQ / VA Filter Map Custom Coloring
+                    if (activeFilterFront === 'VQ') {
+                        const vqReprovas = matchedUnit.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
+                        if (vqReprovas) {
+                            cellClass = 'bg-red';
+                        } else {
+                            cellClass = 'bg-green';
+                        }
+                    } else if (activeFilterFront === 'VA') {
+                        const vaReprovas = matchedUnit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
+                        if (vaReprovas) {
+                            cellClass = 'bg-red';
+                        } else {
+                            cellClass = 'bg-green';
+                        }
+                    }
                     
                     cell.classList.add(cellClass);
-                    cell.innerHTML = `<span class="unit-num">${unitNum}</span>`;
+                    const displayText = matchedUnit.isHall ? 'H' : unitNum;
+                    cell.innerHTML = `<span class="unit-num">${displayText}</span>`;
                     
                     // Add delay/out-of-order pulsing classes
                     const outOfOrder = isUnitOutOfOrder(matchedUnit);
@@ -1281,12 +1331,17 @@ function renderTowers() {
                         cell.classList.add('pulsing-purple');
                     }
                     
-                    cell.title = `${matchedUnit.tower} - Apto ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Concluído (VA)' : frontName}\nStatus: ${matchedUnit.status_geral}`;
+                    cell.title = `${matchedUnit.tower} - ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Entrega dos Sonhos' : frontName}\nStatus: ${matchedUnit.status_geral}`;
                     if (outOfOrder) cell.title += `\n⚠️ Fora de sequência!`;
                     if (delayed) cell.title += `\n⚠️ Prazo atrasado!`;
                     
                     // Dim cell if filtering is active and it doesn't match
-                    if (activeFilterFront && activeFilterFront !== frontName) {
+                    let isMatch = activeFilterFront === frontName;
+                    if (activeFilterFront === 'VQ' || activeFilterFront === 'VA') {
+                        isMatch = true;
+                    }
+                    
+                    if (activeFilterFront && !isMatch) {
                         cell.classList.add('dimmed');
                     }
                     
@@ -1307,7 +1362,7 @@ function renderTowers() {
                 }
                 
                 unitsRowContainer.appendChild(cell);
-            }
+            });
             gridContainer.appendChild(row);
         }
     });
@@ -1631,9 +1686,15 @@ function renderFrenteDetails() {
         
         // Determinar status, classe de pulso e data de conclusão projetada/real
         if (isDone) {
-            statusLabel = '<span class="badge bg-green">Concluído</span>';
-            dateText = `<span class="text-muted">-</span>`;
-            realDoneDate = `<strong class="text-success">${fData.dataFinal}</strong>`;
+            if (fData.na) {
+                statusLabel = '<span class="badge" style="background-color: var(--status-bloqueado)">Não se Aplica</span>';
+                dateText = `<span class="text-muted">-</span>`;
+                realDoneDate = `<strong style="color: var(--status-bloqueado)">N/A</strong>`;
+            } else {
+                statusLabel = '<span class="badge bg-green">Concluído</span>';
+                dateText = `<span class="text-muted">-</span>`;
+                realDoneDate = `<strong class="text-success">${fData.dataFinal}</strong>`;
+            }
         } else {
             const projDate = projectionsMap[u.id] || "-";
             const outOfOrder = isUnitOutOfOrder(u);
@@ -1706,6 +1767,11 @@ function renderFrenteDetails() {
             actionBtn = `<button class="btn btn-xs btn-outline btn-unit-update" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed;"><i class="fa fa-pen"></i> Alimentar</button>`;
         }
 
+        let reprovaBtn = "";
+        if (isActive && (activeFrente === 'VQ' || activeFrente === 'VA') && !isReadOnly && isFrontAllowed) {
+            reprovaBtn = `<button class="btn btn-xs btn-danger btn-unit-reprova" data-id="${u.id}" style="background-color: var(--status-reprovado); border-color: var(--status-reprovado); color: white;"><i class="fa fa-triangle-exclamation"></i> Reprova</button>`;
+        }
+
         tr.innerHTML = `
             <td><strong>${u.tower}</strong></td>
             <td><strong>${u.unit}</strong></td>
@@ -1720,6 +1786,7 @@ function renderFrenteDetails() {
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-xs btn-outline btn-unit-view" data-id="${u.id}"><i class="fa fa-eye"></i> Histórico</button>
                     ${actionBtn}
+                    ${reprovaBtn}
                 </div>
             </td>
         `;
@@ -1729,6 +1796,9 @@ function renderFrenteDetails() {
             tr.querySelector('.btn-unit-reopen').addEventListener('click', () => handleReopenFront(u.id, activeFrente));
         } else if (isActive && !isReadOnly && isFrontAllowed) {
             tr.querySelector('.btn-unit-update').addEventListener('click', () => openUpdateFrontModal(u.id, activeFrente));
+            if (activeFrente === 'VQ' || activeFrente === 'VA') {
+                tr.querySelector('.btn-unit-reprova').addEventListener('click', () => openAddReprovaModal(u.id));
+            }
         }
 
         tableBody.appendChild(tr);
@@ -1884,16 +1954,31 @@ function renderReprovasPage() {
             <td>${r.quantidade_material || '-'}</td>
             <td>${r.responsavel || '-'}</td>
             <td>
-                <span class="badge" style="background-color: ${r.status === 'Pendente' ? 'var(--status-reprovado)' : 'var(--status-aprovado)'}">
-                    ${r.status}
+                <span class="badge" style="background-color: ${r.exec_status === 'CONCLUÍDO' ? 'var(--status-aprovado)' : r.exec_status === 'EXECUTANDO' ? 'var(--status-agendado)' : 'var(--status-reprovado)'}">
+                    ${r.exec_status || 'PENDENTE'}
                 </span>
             </td>
             <td>
+                <span class="badge" style="background-color: ${r.dificuldade === 'EASY' ? 'var(--status-aprovado)' : r.dificuldade === 'HARD' ? 'var(--status-reprovado)' : 'var(--status-agendado)'}">
+                    ${r.dificuldade || 'NORMAL'}
+                </span>
+            </td>
+            <td>
+                <span class="badge" style="background-color: ${r.status === 'Resolvido' ? 'var(--status-aprovado)' : 'var(--status-reprovado)'}">
+                    ${r.status_aprovacao || (r.status === 'Resolvido' ? 'APROVADO' : 'REPROVADO')}
+                </span>
+            </td>
+            <td>
+                <div style="display: flex; gap: 6px; align-items: center;">
                 ${r.status === 'Pendente' ? `
                     <button class="btn btn-xs btn-primary btn-resolve-reprova" data-unit-id="${m.unitId}" data-rep-id="${r.id}">
                         <i class="fa fa-check"></i> Resolver
                     </button>
-                ` : '<i class="fa fa-circle-check text-success"></i> Resolvido'}
+                ` : '<span class="text-success" style="font-size: 0.75rem; font-weight: 500;"><i class="fa fa-circle-check"></i> Resolvido</span>'}
+                <button class="btn btn-xs btn-outline btn-edit-reprova" data-unit-id="${m.unitId}" data-rep-id="${r.id}">
+                    <i class="fa fa-pen"></i> Editar
+                </button>
+                </div>
             </td>
         `;
 
@@ -1903,6 +1988,15 @@ function renderReprovasPage() {
                 const uId = btnResolve.dataset.unitId;
                 const rId = btnResolve.dataset.repId;
                 resolveReprova(uId, rId);
+            });
+        }
+
+        const btnEdit = tr.querySelector('.btn-edit-reprova');
+        if (btnEdit) {
+            btnEdit.addEventListener('click', () => {
+                const uId = btnEdit.dataset.unitId;
+                const rId = btnEdit.dataset.repId;
+                openEditReprovaModal(uId, rId);
             });
         }
 
@@ -1917,6 +2011,12 @@ function resolveReprova(unitId, reprovaId) {
         if (rep) {
             rep.status = 'Resolvido';
             rep.data_fim = new Date().toLocaleDateString('pt-BR');
+            rep.status_aprovacao = 'APROVADO';
+            rep.exec_status = 'CONCLUÍDO';
+            
+            // Re-evaluate quality front advancement if any
+            const activeFrontName = FRENTES_SEQUENCIA[unit.activeFrontIndex];
+            checkAndAdvanceQualityFront(unit, activeFrontName);
             
             // Re-evaluate general unit status if no pending reprovas
             const hasPending = unit.reprovas.some(r => r.status === 'Pendente');
@@ -2329,7 +2429,7 @@ function openUnitDetailsModal(unitId) {
     });
     const optDone = document.createElement('option');
     optDone.value = "Concluido";
-    optDone.textContent = "Concluído (VA)";
+    optDone.textContent = "Entrega dos Sonhos";
     selector.appendChild(optDone);
 
     if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
@@ -2370,14 +2470,22 @@ function openUnitDetailsModal(unitId) {
         let statusText = "Aguardando frentes anteriores";
         
         if (fData.concluido) {
-            statusClass = "done";
-            statusText = `Executado por ${fData.responsavel || 'N/D'} em ${fData.dataFinal || ''} (Duração: ${fData.duracaoReal || 1} dias)`;
+            if (fData.na) {
+                statusClass = "na-ignored";
+                statusText = "Não se aplica a esta unidade / Serviço excluído";
+            } else {
+                statusClass = "done";
+                statusText = `Executado por ${fData.responsavel || 'N/D'} em ${fData.dataFinal || ''} (Duração: ${fData.duracaoReal || 1} dias)`;
+            }
         } else if (u.activeFrontIndex === idx) {
             statusClass = "active";
             statusText = "Liberado para execução - Em andamento";
         }
         
         item.classList.add(statusClass);
+        if (statusClass === "na-ignored") {
+            item.style.opacity = "0.7";
+        }
         
         // Materials details
         let matText = "";
@@ -2399,7 +2507,7 @@ function openUnitDetailsModal(unitId) {
 
         item.innerHTML = `
             <div class="timeline-dot">
-                ${fData.concluido ? '<i class="fa fa-check"></i>' : idx + 1}
+                ${fData.concluido ? (fData.na ? '<i class="fa fa-ban" style="color: var(--status-bloqueado)"></i>' : '<i class="fa fa-check"></i>') : idx + 1}
             </div>
             <div class="timeline-content">
                 <div class="timeline-header">
@@ -2435,11 +2543,20 @@ function openUnitDetailsModal(unitId) {
                 </div>
                 <div class="reprova-card-body">${r.descricao}</div>
                 ${matLine}
-                <div class="reprova-card-footer">
-                    <span>Resp: ${r.responsavel || 'N/D'}</span>
-                    <span>Criado: ${r.data_inicio || ''}</span>
+                <div class="reprova-card-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span>Resp: ${r.responsavel || 'N/D'}</span> | 
+                        <span>Criado: ${r.data_inicio || ''}</span>
+                    </div>
+                    <button class="btn btn-xs btn-outline btn-edit-unit-reprova" data-rep-id="${r.id}" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa fa-pen"></i> Editar</button>
                 </div>
             `;
+            
+            card.querySelector('.btn-edit-unit-reprova').addEventListener('click', () => {
+                modalUnitDetails.classList.add('hidden');
+                openEditReprovaModal(u.id, r.id);
+            });
+            
             repRoot.appendChild(card);
         });
     }
@@ -2656,6 +2773,49 @@ function handleUpdateFrontSubmit(e) {
     }
 }
 
+async function handleUpdateNaClick() {
+    const unitId = document.getElementById('update-unit-id').value;
+    const frenteName = document.getElementById('update-front-name').value;
+    
+    const u = projectState.units.find(x => x.id === unitId);
+    if (!u) return;
+    
+    if (!confirm(`Deseja realmente marcar a frente "${frenteName}" como "Não se Aplica" para a unidade ${u.tower} - Apto ${u.unit}?`)) {
+        return;
+    }
+    
+    if (!u.frontsData[frenteName]) {
+        u.frontsData[frenteName] = {};
+    }
+    const fData = u.frontsData[frenteName];
+    fData.concluido = true;
+    fData.na = true;
+    fData.responsavel = "N/A";
+    fData.dataFinal = "N/A";
+    
+    // Advance to next service front
+    u.activeFrontIndex++;
+    
+    // Update general status
+    if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
+        u.status_geral = 'Aprovado';
+    } else {
+        u.status_geral = 'Ativo';
+    }
+    
+    await saveState();
+    modalUpdateFront.classList.add('hidden');
+    
+    // Refresh page data
+    if (activePage === 'page-frentes') {
+        renderFrentesSubtabs();
+        renderFrenteDetails();
+    } else if (activePage === 'page-mapa') {
+        renderSummaryStats();
+        renderTowers();
+    }
+}
+
 async function handleBatchApprovalSubmit(e) {
     e.preventDefault();
     
@@ -2819,6 +2979,51 @@ function openAddReprovaModal(unitId) {
     
     // Reset form
     document.getElementById('form-add-reprova').reset();
+    
+    // Reset edit mode hidden flags
+    document.getElementById('rep-edit-mode').value = "false";
+    document.getElementById('rep-id').value = "";
+    
+    // Reset submit button text
+    const submitBtn = document.getElementById('form-add-reprova').querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = `<i class="fa fa-triangle-exclamation"></i> Registrar Reprova`;
+        submitBtn.className = 'btn btn-danger';
+    }
+
+    modalAddReprova.classList.remove('hidden');
+}
+
+function openEditReprovaModal(unitId, reprovaId) {
+    const u = projectState.units.find(x => x.id === unitId);
+    if (!u) return;
+    const r = u.reprovas.find(x => x.id === reprovaId);
+    if (!r) return;
+
+    document.getElementById('rep-unit-id').value = unitId;
+    document.getElementById('modal-rep-unit-title').textContent = `${u.tower} - Apto ${u.unit} (Editar Reprova)`;
+    document.getElementById('rep-edit-mode').value = "true";
+    document.getElementById('rep-id').value = reprovaId;
+    
+    document.getElementById('rep-local').value = r.local || "";
+    document.getElementById('rep-desc').value = r.descricao || "";
+    document.getElementById('rep-resp').value = r.responsavel || "";
+    
+    document.getElementById('rep-exec-status').value = r.exec_status || "PENDENTE";
+    document.getElementById('rep-dificuldade').value = r.dificuldade || "NORMAL";
+    document.getElementById('rep-app-status').value = r.status_aprovacao || (r.status === 'Resolvido' ? 'APROVADO' : 'REPROVADO');
+    
+    document.getElementById('rep-mat-nome').value = r.material || "";
+    document.getElementById('rep-mat-qtd').value = r.quantidade_material || "";
+    document.getElementById('rep-mat-tipo').value = r.tipo_material || "";
+    document.getElementById('rep-mat-subtipo').value = r.subtipo_material || "";
+
+    // Set submit button style and text
+    const submitBtn = document.getElementById('form-add-reprova').querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = `<i class="fa fa-floppy-disk"></i> Salvar Alterações`;
+        submitBtn.className = 'btn btn-primary';
+    }
 
     modalAddReprova.classList.remove('hidden');
 }
@@ -2941,6 +3146,44 @@ function saveExcelReprovas() {
     openUnitDetailsModal(u.id);
 }
 
+function checkAndAdvanceQualityFront(unit, frontName) {
+    if (frontName !== 'VQ' && frontName !== 'VA') return;
+    
+    // If the unit's active front is not this front, do nothing
+    const activeFrontName = FRENTES_SEQUENCIA[unit.activeFrontIndex];
+    if (activeFrontName !== frontName) return;
+    
+    // Check if there are any pending reprovas for this front
+    const hasPending = unit.reprovas.some(r => r.servico === frontName && r.status === 'Pendente');
+    
+    if (!hasPending) {
+        // Mark the current quality front as concluded
+        if (!unit.frontsData[frontName]) {
+            unit.frontsData[frontName] = {};
+        }
+        const fData = unit.frontsData[frontName];
+        fData.concluido = true;
+        if (!fData.responsavel) fData.responsavel = "Equipe Qualidade";
+        if (!fData.dataFinal) fData.dataFinal = new Date().toLocaleDateString('pt-BR');
+        
+        // Advance activeFrontIndex
+        unit.activeFrontIndex++;
+        
+        // Update general status
+        if (unit.activeFrontIndex === FRENTES_SEQUENCIA.length) {
+            unit.status_geral = 'Aprovado';
+        } else {
+            unit.status_geral = 'Ativo';
+        }
+    } else {
+        // If there are pending reprovas, the unit status must be "Reprovado"
+        unit.status_geral = 'Reprovado';
+        if (unit.frontsData[frontName]) {
+            unit.frontsData[frontName].concluido = false;
+        }
+    }
+}
+
 function handleAddReprovaSubmit(e) {
     e.preventDefault();
     const unitId = document.getElementById('rep-unit-id').value;
@@ -2956,30 +3199,79 @@ function handleAddReprovaSubmit(e) {
     const matTipo = document.getElementById('rep-mat-tipo').value.trim();
     const matSub = document.getElementById('rep-mat-subtipo').value.trim();
 
-    // Create the reproval item
-    const newRep = {
-        id: uuidv4(),
-        descricao: desc,
-        responsavel: resp,
-        data_inicio: new Date().toLocaleDateString('pt-BR'),
-        data_fim: "",
-        servico: FRENTES_SEQUENCIA[u.activeFrontIndex], // current front VQ or VA
-        local: local,
-        status: "Pendente",
-        material: matNome || "",
-        tipo_material: matNome ? matTipo : "",
-        subtipo_material: matNome ? matSub : "",
-        quantidade_material: matNome ? matQtdVal : ""
-    };
+    const execStatus = document.getElementById('rep-exec-status').value;
+    const dificuldade = document.getElementById('rep-dificuldade').value;
+    const appStatus = document.getElementById('rep-app-status').value;
 
-    u.reprovas.push(newRep);
-    u.status_geral = "Reprovado"; // Set unit general status to Reprovado
+    const isEdit = document.getElementById('rep-edit-mode').value === 'true';
+    const repId = document.getElementById('rep-id').value;
+
+    const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ";
+
+    if (isEdit) {
+        const r = u.reprovas.find(x => x.id === repId);
+        if (r) {
+            r.local = local;
+            r.descricao = desc;
+            r.responsavel = resp;
+            r.material = matNome || "";
+            r.tipo_material = matNome ? matTipo : "";
+            r.subtipo_material = matNome ? matSub : "";
+            r.quantidade_material = matNome ? matQtdVal : "";
+            r.exec_status = execStatus;
+            r.dificuldade = dificuldade;
+            r.status_aprovacao = appStatus;
+            
+            if (appStatus === 'APROVADO') {
+                r.status = 'Resolvido';
+                if (!r.data_fim) {
+                    r.data_fim = new Date().toLocaleDateString('pt-BR');
+                }
+            } else {
+                r.status = 'Pendente';
+                r.data_fim = "";
+            }
+        }
+    } else {
+        // Create the reproval item
+        const newRep = {
+            id: uuidv4(),
+            descricao: desc,
+            responsavel: resp,
+            data_inicio: new Date().toLocaleDateString('pt-BR'),
+            data_fim: appStatus === 'APROVADO' ? new Date().toLocaleDateString('pt-BR') : "",
+            servico: activeFrontName,
+            local: local,
+            status: appStatus === 'APROVADO' ? 'Resolvido' : 'Pendente',
+            material: matNome || "",
+            tipo_material: matNome ? matTipo : "",
+            subtipo_material: matNome ? matSub : "",
+            quantidade_material: matNome ? matQtdVal : "",
+            exec_status: execStatus,
+            dificuldade: dificuldade,
+            status_aprovacao: appStatus
+        };
+
+        u.reprovas.push(newRep);
+    }
+
+    // Check quality front advancement (VQ/VA)
+    checkAndAdvanceQualityFront(u, activeFrontName);
 
     saveState();
     modalAddReprova.classList.add('hidden');
     
-    // Open Unit detail modal back to let user review
-    openUnitDetailsModal(unitId);
+    // Refresh page data
+    if (activePage === 'page-frentes') {
+        renderFrenteDetails();
+    } else if (activePage === 'page-reprovas') {
+        renderReprovasPage();
+    } else if (activePage === 'page-mapa') {
+        renderSummaryStats();
+        renderTowers();
+    } else {
+        openUnitDetailsModal(unitId);
+    }
 }
 
 // Simple uuidv4 generator in JS
