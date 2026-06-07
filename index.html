@@ -937,7 +937,7 @@
                             <!-- Abas de controle internas de Reprovas -->
                             <div class="modal-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); display: flex;">
                                 <button class="modal-tab-btn active" data-tab="modal-rep-sub-list">Histórico de Reprovas</button>
-                                <button class="modal-tab-btn" data-tab="modal-rep-sub-excel">Planilha de Lote (Estilo Excel)</button>
+                                <button class="modal-tab-btn" data-tab="modal-rep-sub-excel">Agrupar Itens (Lote Excel)</button>
                             </div>
                             
                             <!-- Sub-Painel 1: Lista do histórico original -->
@@ -952,34 +952,52 @@
                             
                             <!-- Sub-Painel 2: Planilha de Lançamento Excel -->
                             <div id="modal-rep-sub-excel" class="modal-tab-panel">
-                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-style: italic;">
-                                    Preencha cada linha abaixo para cadastrar falhas em lote para este apartamento. Deixe em branco as linhas que não for usar.
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem; font-style: italic;">
+                                    Cole colunas do Excel diretamente nos campos abaixo (cada linha preenchida criará uma nova reprova correspondente, máx. 100 itens).
                                 </p>
-                                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                                    <table class="data-table" style="width: 100%; min-width: 800px; font-size: 0.8rem;">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 130px;">Local/Cômodo</th>
-                                                <th>Descrição da Falha</th>
-                                                <th style="width: 120px;">Material</th>
-                                                <th style="width: 100px;">Tipo</th>
-                                                <th style="width: 100px;">Subtipo</th>
-                                                <th style="width: 70px;">Qtd</th>
-                                                <th style="width: 110px;">Responsável</th>
-                                                <th style="width: 40px; text-align: center;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="modal-rep-excel-body">
-                                            <!-- Linhas inseridas dinamicamente via JS -->
-                                        </tbody>
-                                    </table>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">1. Descrição da Reprova (Obrigatório)</label>
+                                        <textarea id="bulk-rep-desc" rows="8" placeholder="Cole a coluna de reprova..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">2. Local / Cômodo</label>
+                                        <textarea id="bulk-rep-local" rows="8" placeholder="Cozinha&#10;Sala de Estar&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">3. Tipo de Serviço</label>
+                                        <textarea id="bulk-rep-servico" rows="8" placeholder="Piso&#10;Pintura&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">4. Resp. Correção</label>
+                                        <textarea id="bulk-rep-resp" rows="8" placeholder="Dilaércio&#10;Ivan&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
                                 </div>
-                                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                                    <button type="button" id="btn-modal-rep-excel-add-row" class="btn btn-xs btn-outline" style="border-color: var(--primary-color); color: var(--primary-color); padding: 4px 10px;">
-                                        <i class="fa fa-plus"></i> Adicionar Linha
-                                    </button>
-                                    <button type="button" id="btn-modal-rep-excel-save" class="btn btn-sm btn-danger" style="padding: 6px 12px;">
-                                        <i class="fa fa-floppy-disk"></i> Salvar Lançamento em Lote
+                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 10px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">5. Status Execução</label>
+                                        <textarea id="bulk-rep-exec" rows="5" placeholder="PENDENTE&#10;EXECUTANDO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">6. Dificuldade</label>
+                                        <textarea id="bulk-rep-dificuldade" rows="5" placeholder="NORMAL&#10;HARD&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">7. Status Aprovação</label>
+                                        <textarea id="bulk-rep-app" rows="5" placeholder="REPROVADO&#10;REPROVADO&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">8. Data de Início</label>
+                                        <textarea id="bulk-rep-data-inicio" rows="5" placeholder="20/05/2026&#10;22/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.75rem; margin-bottom: 4px; display: block; font-weight: 600;">9. Data Final</label>
+                                        <textarea id="bulk-rep-data-fim" rows="5" placeholder="25/05/2026&#10;..." style="font-family: monospace; font-size: 0.75rem; width: 100%; resize: vertical; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 6px;"></textarea>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                                    <button type="button" id="btn-modal-rep-bulk-save" class="btn btn-sm btn-danger" style="padding: 6px 16px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fa fa-copy"></i> Agrupar e Salvar Itens (Lote)
                                     </button>
                                 </div>
                             </div>
@@ -1105,20 +1123,39 @@
             <form id="form-add-reprova">
                 <input type="hidden" id="rep-unit-id">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="rep-local">Cômodo / Local da Falha</label>
-                        <select id="rep-local" required>
-                            <option value="">Selecione...</option>
-                            <option value="Cozinha">Cozinha</option>
-                            <option value="Área de Serviço">Área de Serviço</option>
-                            <option value="Sala de Estar">Sala de Estar</option>
-                            <option value="Banheiro 1">Banheiro 1</option>
-                            <option value="Banheiro 2">Banheiro 2</option>
-                            <option value="Quarto 1">Quarto 1</option>
-                            <option value="Quarto 2">Quarto 2</option>
-                            <option value="Sacada/Varanda">Sacada/Varanda</option>
-                            <option value="Corredor/Hall">Corredor/Hall</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-local">Cômodo / Local da Falha</label>
+                            <select id="rep-local" required>
+                                <option value="">Selecione...</option>
+                                <option value="Cozinha">Cozinha</option>
+                                <option value="Área de Serviço">Área de Serviço</option>
+                                <option value="Sala de Estar">Sala de Estar</option>
+                                <option value="Banheiro 1">Banheiro 1</option>
+                                <option value="Banheiro 2">Banheiro 2</option>
+                                <option value="Quarto 1">Quarto 1</option>
+                                <option value="Quarto 2">Quarto 2</option>
+                                <option value="Sacada/Varanda">Sacada/Varanda</option>
+                                <option value="Corredor/Hall">Corredor/Hall</option>
+                                <option value="Apartamento">Apartamento</option>
+                            </select>
+                        </div>
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-servico-tipo">Tipo de Serviço</label>
+                            <select id="rep-servico-tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Piso">Piso</option>
+                                <option value="Rejunte">Rejunte</option>
+                                <option value="Laminado">Laminado</option>
+                                <option value="Hidráulica">Hidráulica</option>
+                                <option value="Elétrica">Elétrica</option>
+                                <option value="Pintura">Pintura</option>
+                                <option value="Check list">Check list</option>
+                                <option value="Limpeza">Limpeza</option>
+                                <option value="VQ">VQ</option>
+                                <option value="VA">VA</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1157,6 +1194,17 @@
                                 <option value="REPROVADO" selected>REPROVADO</option>
                                 <option value="APROVADO">APROVADO</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-data-inicio">Data de Início (Planejada/Real)</label>
+                            <input type="date" id="rep-data-inicio">
+                        </div>
+                        <div class="form-group col" style="flex: 1;">
+                            <label for="rep-data-fim">Data de Fim (Real)</label>
+                            <input type="date" id="rep-data-fim">
                         </div>
                     </div>
 

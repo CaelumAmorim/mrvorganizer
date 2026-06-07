@@ -684,14 +684,10 @@ function setupEventListeners() {
     // Form Add Reprova
     document.getElementById('form-add-reprova').addEventListener('submit', handleAddReprovaSubmit);
 
-    // VQ/VA batch reprova spreadsheet listeners
-    const btnAddExcelRow = document.getElementById('btn-modal-rep-excel-add-row');
-    if (btnAddExcelRow) {
-        btnAddExcelRow.addEventListener('click', () => addExcelReprovaRow());
-    }
-    const btnSaveExcelRep = document.getElementById('btn-modal-rep-excel-save');
-    if (btnSaveExcelRep) {
-        btnSaveExcelRep.addEventListener('click', saveExcelReprovas);
+    // VQ/VA batch reprova bulk copy-paste listener
+    const btnSaveBulkRep = document.getElementById('btn-modal-rep-bulk-save');
+    if (btnSaveBulkRep) {
+        btnSaveBulkRep.addEventListener('click', handleBulkReprovasSave);
     }
 
     // Filter Reprovas table changes (Reset to page 1 on filter change)
@@ -2536,6 +2532,15 @@ function openUnitDetailsModal(unitId) {
             
             const matLine = r.material ? `<div style="margin-top: 5px; font-size: 0.8rem;"><strong>Insumo para Correção:</strong> ${r.material} (${r.quantidade_material} x ${r.tipo_material || ''})</div>` : '';
             
+            const dateLine = `<span>Início: ${r.data_inicio || '-'}</span>${r.data_fim ? ` | <span>Fim: ${r.data_fim}</span>` : ''}`;
+            const statusBadges = `
+                <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                    <span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background-color: ${r.exec_status === 'CONCLUÍDO' ? 'var(--status-aprovado)' : r.exec_status === 'EXECUTANDO' ? 'var(--status-agendado)' : 'var(--status-reprovado)'}; opacity: 0.9;">Exec: ${r.exec_status || 'PENDENTE'}</span>
+                    <span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background-color: ${r.dificuldade === 'EASY' ? 'var(--status-aprovado)' : r.dificuldade === 'HARD' ? 'var(--status-reprovado)' : 'var(--status-agendado)'}; opacity: 0.9;">Dif: ${r.dificuldade || 'NORMAL'}</span>
+                    <span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background-color: ${r.status === 'Resolvido' ? 'var(--status-aprovado)' : 'var(--status-reprovado)'}; opacity: 0.9;">Aprovação: ${r.status_aprovacao || (r.status === 'Resolvido' ? 'APROVADO' : 'REPROVADO')}</span>
+                </div>
+            `;
+
             card.innerHTML = `
                 <div class="reprova-card-header">
                     <span class="room"><i class="fa fa-location-dot text-danger"></i> ${r.local} (${r.servico})</span>
@@ -2543,10 +2548,11 @@ function openUnitDetailsModal(unitId) {
                 </div>
                 <div class="reprova-card-body">${r.descricao}</div>
                 ${matLine}
-                <div class="reprova-card-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                ${statusBadges}
+                <div class="reprova-card-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
                     <div>
                         <span>Resp: ${r.responsavel || 'N/D'}</span> | 
-                        <span>Criado: ${r.data_inicio || ''}</span>
+                        ${dateLine}
                     </div>
                     <button class="btn btn-xs btn-outline btn-edit-unit-reprova" data-rep-id="${r.id}" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa fa-pen"></i> Editar</button>
                 </div>
@@ -2561,14 +2567,6 @@ function openUnitDetailsModal(unitId) {
         });
     }
 
-    // Initialize VQ/VA batch reprova excel spreadsheet
-    const excelBody = document.getElementById('modal-rep-excel-body');
-    if (excelBody) {
-        excelBody.innerHTML = '';
-        for (let i = 0; i < 3; i++) {
-            addExcelReprovaRow();
-        }
-    }
 
     // Show Add Reprova button if unit is in VQ or VA step
     const btnAddRep = document.getElementById('modal-btn-add-reprova');
@@ -2984,6 +2982,40 @@ function openAddReprovaModal(unitId) {
     document.getElementById('rep-edit-mode').value = "false";
     document.getElementById('rep-id').value = "";
     
+    // Set default service type based on active front
+    const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ";
+    let matchedOption = "VQ";
+    if (activeFrontName.includes("PISO") || activeFrontName.includes("Azulejo") || activeFrontName.includes("PISO CERAMICO / AZULEJO")) {
+        matchedOption = "Piso";
+    } else if (activeFrontName.includes("Rejunte")) {
+        matchedOption = "Rejunte";
+    } else if (activeFrontName.includes("Laminado") || activeFrontName.includes("PISO LAMINADO")) {
+        matchedOption = "Laminado";
+    } else if (activeFrontName.includes("Água") || activeFrontName.includes("Esgoto") || activeFrontName.includes("PRUMADA")) {
+        matchedOption = "Hidráulica";
+    } else if (activeFrontName.includes("cabo") || activeFrontName.includes("Disjuntores") || activeFrontName.includes("Elétrica")) {
+        matchedOption = "Elétrica";
+    } else if (activeFrontName.includes("Pintura") || activeFrontName.includes("PINTURA")) {
+        matchedOption = "Pintura";
+    } else if (activeFrontName.includes("Checklist") || activeFrontName.includes("Check list")) {
+        matchedOption = "Check list";
+    } else if (activeFrontName.includes("Limpeza") || activeFrontName.includes("LIMPEZA")) {
+        matchedOption = "Limpeza";
+    } else if (activeFrontName === "VQ") {
+        matchedOption = "VQ";
+    } else if (activeFrontName === "VA") {
+        matchedOption = "VA";
+    }
+    document.getElementById('rep-servico-tipo').value = matchedOption;
+    
+    // Set today as default start date
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('rep-data-inicio').value = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('rep-data-fim').value = "";
+
     // Reset submit button text
     const submitBtn = document.getElementById('form-add-reprova').querySelector('button[type="submit"]');
     if (submitBtn) {
@@ -3006,12 +3038,16 @@ function openEditReprovaModal(unitId, reprovaId) {
     document.getElementById('rep-id').value = reprovaId;
     
     document.getElementById('rep-local').value = r.local || "";
+    document.getElementById('rep-servico-tipo').value = r.servico || "";
     document.getElementById('rep-desc').value = r.descricao || "";
     document.getElementById('rep-resp').value = r.responsavel || "";
     
     document.getElementById('rep-exec-status').value = r.exec_status || "PENDENTE";
     document.getElementById('rep-dificuldade').value = r.dificuldade || "NORMAL";
     document.getElementById('rep-app-status').value = r.status_aprovacao || (r.status === 'Resolvido' ? 'APROVADO' : 'REPROVADO');
+    
+    document.getElementById('rep-data-inicio').value = convertDMYToYMD(r.data_inicio);
+    document.getElementById('rep-data-fim').value = convertDMYToYMD(r.data_fim);
     
     document.getElementById('rep-mat-nome').value = r.material || "";
     document.getElementById('rep-mat-qtd').value = r.quantidade_material || "";
@@ -3028,122 +3064,116 @@ function openEditReprovaModal(unitId, reprovaId) {
     modalAddReprova.classList.remove('hidden');
 }
 
-function addExcelReprovaRow() {
-    const tbody = document.getElementById('modal-rep-excel-body');
-    if (!tbody) return;
-    
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>
-            <select class="excel-rep-local" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
-                <option value="">Selecione...</option>
-                <option value="Cozinha">Cozinha</option>
-                <option value="Área de Serviço">Área de Serviço</option>
-                <option value="Sala de Estar">Sala de Estar</option>
-                <option value="Banheiro 1">Banheiro 1</option>
-                <option value="Banheiro 2">Banheiro 2</option>
-                <option value="Quarto 1">Quarto 1</option>
-                <option value="Quarto 2">Quarto 2</option>
-                <option value="Sacada/Varanda">Sacada/Varanda</option>
-                <option value="Corredor/Hall">Corredor/Hall</option>
-            </select>
-        </td>
-        <td><input type="text" class="excel-rep-desc" placeholder="Ex: Piso oco" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td><input type="text" class="excel-rep-mat" placeholder="Ex: Piso" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td><input type="text" class="excel-rep-tipo" placeholder="Ex: AC3" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td><input type="text" class="excel-rep-sub" placeholder="Ex: Cinza" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td><input type="text" class="excel-rep-qtd" placeholder="Ex: 2 sacos" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td><input type="text" class="excel-rep-resp" placeholder="Ex: Ivan" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
-        <td style="text-align: center; vertical-align: middle;">
-            <button type="button" class="btn-remove-excel-row" style="background: none; border: none; color: var(--status-reprovado); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;"><i class="fa fa-trash"></i></button>
-        </td>
-    `;
-    
-    tr.querySelector('.btn-remove-excel-row').addEventListener('click', () => {
-        tr.remove();
-    });
-    
-    tbody.appendChild(tr);
-}
-
-function saveExcelReprovas() {
+async function handleBulkReprovasSave() {
     const modalUnitTitleEl = document.getElementById('modal-unit-title');
     const unitId = modalUnitTitleEl.dataset.unitId;
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
     
-    const tbody = document.getElementById('modal-rep-excel-body');
-    const rows = tbody.querySelectorAll('tr');
+    const descs = document.getElementById('bulk-rep-desc').value.split('\n').map(x => x.trim()).filter(x => x !== '');
+    if (descs.length === 0) {
+        alert("Por favor, preencha a coluna de Descrições das Reprovas.");
+        return;
+    }
     
-    let addedCount = 0;
-    const errors = [];
-    const newReprovas = [];
+    const locals = document.getElementById('bulk-rep-local').value.split('\n').map(x => x.trim());
+    const servicos = document.getElementById('bulk-rep-servico').value.split('\n').map(x => x.trim());
+    const resps = document.getElementById('bulk-rep-resp').value.split('\n').map(x => x.trim());
+    const execs = document.getElementById('bulk-rep-exec').value.split('\n').map(x => x.trim());
+    const dificults = document.getElementById('bulk-rep-dificuldade').value.split('\n').map(x => x.trim());
+    const apps = document.getElementById('bulk-rep-app').value.split('\n').map(x => x.trim());
+    const datesInicio = document.getElementById('bulk-rep-data-inicio').value.split('\n').map(x => x.trim());
+    const datesFim = document.getElementById('bulk-rep-data-fim').value.split('\n').map(x => x.trim());
     
-    rows.forEach((row, idx) => {
-        const local = row.querySelector('.excel-rep-local').value;
-        const desc = row.querySelector('.excel-rep-desc').value.trim();
-        const mat = row.querySelector('.excel-rep-mat').value.trim();
-        const tipo = row.querySelector('.excel-rep-tipo').value.trim();
-        const subtipo = row.querySelector('.excel-rep-sub').value.trim();
-        const qtd = row.querySelector('.excel-rep-qtd').value.trim();
-        const resp = row.querySelector('.excel-rep-resp').value.trim();
+    const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ";
+    let count = 0;
+    
+    const totalRows = Math.min(100, descs.length);
+    
+    function formatPastedDate(dStr) {
+        if (!dStr) return "";
+        const clean = dStr.trim();
+        if (!clean) return "";
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) return clean;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+            const parts = clean.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return clean;
+    }
+    
+    for (let i = 0; i < totalRows; i++) {
+        const desc = descs[i];
+        if (!desc) continue;
         
-        // Skip completely empty rows
-        if (!local && !desc && !mat && !tipo && !subtipo && !qtd && !resp) {
-            return;
+        const local = locals[i] || "Apartamento";
+        const servico = servicos[i] || activeFrontName;
+        const resp = resps[i] || "Equipe Qualidade";
+        const execStatus = (execs[i] || "PENDENTE").toUpperCase();
+        const difficulty = (dificults[i] || "NORMAL").toUpperCase();
+        const appStatus = (apps[i] || "REPROVADO").toUpperCase();
+        
+        let dInicio = formatPastedDate(datesInicio[i]);
+        if (!dInicio) {
+            dInicio = new Date().toLocaleDateString('pt-BR');
         }
         
-        // Validation
-        if (!local) {
-            errors.push(`Linha ${idx + 1}: Selecione o Local.`);
-            return;
-        }
-        if (!desc) {
-            errors.push(`Linha ${idx + 1}: Preencha a descrição da falha.`);
-            return;
-        }
-        if (!resp) {
-            errors.push(`Linha ${idx + 1}: Preencha o responsável pela correção.`);
-            return;
+        let dFim = formatPastedDate(datesFim[i]);
+        if (appStatus === 'APROVADO' && !dFim) {
+            dFim = new Date().toLocaleDateString('pt-BR');
         }
         
-        const repItem = {
+        const reprovaItem = {
             id: uuidv4(),
-            descricao: desc,
-            responsavel: resp,
-            data_inicio: new Date().toLocaleDateString('pt-BR'),
-            data_fim: "",
-            servico: FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ",
+            servico: servico,
             local: local,
-            status: "Pendente",
-            material: mat,
-            tipo_material: mat ? tipo : "",
-            subtipo_material: mat ? subtipo : "",
-            quantidade_material: mat ? qtd : ""
+            descricao: desc,
+            material: "",
+            tipo_material: "",
+            subtipo_material: "",
+            quantidade_material: 0,
+            responsavel: resp,
+            status: appStatus === 'APROVADO' ? 'Resolvido' : 'Pendente',
+            data_inicio: dInicio,
+            data_fim: dFim,
+            exec_status: execStatus,
+            dificuldade: difficulty,
+            status_aprovacao: appStatus
         };
-        newReprovas.push(repItem);
-    });
-    
-    if (errors.length > 0) {
-        alert("Erros encontrados:\n" + errors.join("\n"));
-        return;
+        
+        u.reprovas.push(reprovaItem);
+        count++;
     }
     
-    if (newReprovas.length === 0) {
-        alert("Nenhum item válido para salvar. Preencha pelo menos uma linha.");
-        return;
-    }
+    // Check quality front advancement (VQ/VA)
+    checkAndAdvanceQualityFront(u, activeFrontName);
     
-    newReprovas.forEach(rep => {
-        u.reprovas.push(rep);
-    });
-    u.status_geral = "Reprovado";
+    await saveState();
     
-    saveState();
-    alert(`${newReprovas.length} reprova(s) cadastrada(s) com sucesso!`);
+    alert(`${count} reprova(s) cadastrada(s) em lote com sucesso!`);
     
-    // Refresh modal
+    // Clear fields
+    document.getElementById('bulk-rep-desc').value = '';
+    document.getElementById('bulk-rep-local').value = '';
+    document.getElementById('bulk-rep-servico').value = '';
+    document.getElementById('bulk-rep-resp').value = '';
+    document.getElementById('bulk-rep-exec').value = '';
+    document.getElementById('bulk-rep-dificuldade').value = '';
+    document.getElementById('bulk-rep-app').value = '';
+    document.getElementById('bulk-rep-data-inicio').value = '';
+    document.getElementById('bulk-rep-data-fim').value = '';
+    
+    // Refresh modal and view
     openUnitDetailsModal(u.id);
+    
+    if (activePage === 'page-frentes') {
+        renderFrenteDetails();
+    } else if (activePage === 'page-reprovas') {
+        renderReprovasPage();
+    } else if (activePage === 'page-mapa') {
+        renderSummaryStats();
+        renderTowers();
+    }
 }
 
 function checkAndAdvanceQualityFront(unit, frontName) {
@@ -3208,6 +3238,16 @@ function handleAddReprovaSubmit(e) {
 
     const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ";
 
+    const servicoTipo = document.getElementById('rep-servico-tipo').value;
+    const dataInicioYMD = document.getElementById('rep-data-inicio').value;
+    const dataFimYMD = document.getElementById('rep-data-fim').value;
+
+    const dataInicio = convertYMDToDMY(dataInicioYMD) || new Date().toLocaleDateString('pt-BR');
+    let dataFim = convertYMDToDMY(dataFimYMD);
+    if (appStatus === 'APROVADO' && !dataFim) {
+        dataFim = new Date().toLocaleDateString('pt-BR');
+    }
+
     if (isEdit) {
         const r = u.reprovas.find(x => x.id === repId);
         if (r) {
@@ -3221,15 +3261,15 @@ function handleAddReprovaSubmit(e) {
             r.exec_status = execStatus;
             r.dificuldade = dificuldade;
             r.status_aprovacao = appStatus;
+            r.servico = servicoTipo || r.servico || activeFrontName;
+            r.data_inicio = dataInicio;
             
             if (appStatus === 'APROVADO') {
                 r.status = 'Resolvido';
-                if (!r.data_fim) {
-                    r.data_fim = new Date().toLocaleDateString('pt-BR');
-                }
+                r.data_fim = dataFim || new Date().toLocaleDateString('pt-BR');
             } else {
                 r.status = 'Pendente';
-                r.data_fim = "";
+                r.data_fim = dataFim;
             }
         }
     } else {
@@ -3238,9 +3278,9 @@ function handleAddReprovaSubmit(e) {
             id: uuidv4(),
             descricao: desc,
             responsavel: resp,
-            data_inicio: new Date().toLocaleDateString('pt-BR'),
-            data_fim: appStatus === 'APROVADO' ? new Date().toLocaleDateString('pt-BR') : "",
-            servico: activeFrontName,
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            servico: servicoTipo || activeFrontName,
             local: local,
             status: appStatus === 'APROVADO' ? 'Resolvido' : 'Pendente',
             material: matNome || "",
