@@ -1889,6 +1889,7 @@ function renderFrenteDetails() {
                         }
                     }
                 }
+                updateLoteUnitsSelection();
             };
             
             // Only bind change listener once
@@ -1896,11 +1897,40 @@ function renderFrenteDetails() {
                 loteTowerSelect.addEventListener('change', updateFloorOptions);
                 loteTowerSelect.dataset.listenerBound = 'true';
             }
+
+            if (!loteFloorSelect.dataset.listenerBound) {
+                loteFloorSelect.addEventListener('change', () => {
+                    filterLoteUnitsByFloor(loteFloorSelect.value);
+                });
+                loteFloorSelect.dataset.listenerBound = 'true';
+            }
+
+            const btnLoteSelectAll = document.getElementById('btn-lote-select-all');
+            if (btnLoteSelectAll && !btnLoteSelectAll.dataset.listenerBound) {
+                btnLoteSelectAll.addEventListener('click', () => {
+                    const checkboxes = document.querySelectorAll('.lote-unit-item:not(.hidden) .lote-unit-checkbox');
+                    checkboxes.forEach(cb => cb.checked = true);
+                    updateLoteUnitsSelectedCount();
+                });
+                btnLoteSelectAll.dataset.listenerBound = 'true';
+            }
+
+            const btnLoteDeselectAll = document.getElementById('btn-lote-deselect-all');
+            if (btnLoteDeselectAll && !btnLoteDeselectAll.dataset.listenerBound) {
+                btnLoteDeselectAll.addEventListener('click', () => {
+                    const checkboxes = document.querySelectorAll('.lote-unit-item:not(.hidden) .lote-unit-checkbox');
+                    checkboxes.forEach(cb => cb.checked = false);
+                    updateLoteUnitsSelectedCount();
+                });
+                btnLoteDeselectAll.dataset.listenerBound = 'true';
+            }
             
             // Run it now
             updateFloorOptions();
         } else {
             loteContainer.classList.add('hidden');
+            const unitsSelContainer = document.getElementById('lote-units-selection-container');
+            if (unitsSelContainer) unitsSelContainer.classList.add('hidden');
         }
     }
 
@@ -3293,25 +3323,18 @@ async function handleBatchApprovalSubmit(e) {
     const fIdx = FRENTES_SEQUENCIA.indexOf(activeFrente);
     if (fIdx === -1) return;
 
-    // Filter units matching the criteria
-    let unitsToApprove = projectState.units.filter(u => {
-        // Must match tower
-        if (u.tower !== tower) return false;
-        // Must match floor (if not "all")
-        if (floorStr !== 'all' && u.floor.toString() !== floorStr) return false;
-        // Must be currently active on this front
-        const fData = u.frontsData[activeFrente] || {};
-        const isDone = fData.concluido;
-        const isActive = !isDone && u.activeFrontIndex === fIdx;
-        return isActive;
-    });
+    // Filter units matching the checked checkboxes
+    const checkedCheckboxes = Array.from(document.querySelectorAll('.lote-unit-checkbox:checked'));
+    const selectedUnitIds = checkedCheckboxes.map(cb => cb.value);
+
+    let unitsToApprove = projectState.units.filter(u => selectedUnitIds.includes(u.id));
 
     if (unitsToApprove.length === 0) {
-        alert("Nenhuma unidade pendente nesta frente de serviço atende aos filtros de lote selecionados.");
+        alert("Nenhuma unidade pendente foi selecionada para aprovação em lote.");
         return;
     }
 
-    const confirmMsg = `Deseja realmente aprovar em lote a frente "${activeFrente}" para as ${unitsToApprove.length} unidades pendentes na ${tower}${floorStr !== 'all' ? `, no ${floorStr}º Pavimento` : ''}?`;
+    const confirmMsg = `Deseja realmente aprovar em lote a frente "${activeFrente}" para as ${unitsToApprove.length} unidades selecionadas?`;
     if (!confirm(confirmMsg)) {
         return;
     }
@@ -3373,6 +3396,121 @@ async function handleBatchApprovalSubmit(e) {
         renderFrentesSubtabs();
         renderFrenteDetails();
     }
+}
+
+function updateLoteUnitsSelection() {
+    const towerSelect = document.getElementById('lote-tower');
+    const floorSelect = document.getElementById('lote-floor');
+    const container = document.getElementById('lote-units-selection-container');
+    const grid = document.getElementById('lote-units-grid');
+    const countSpan = document.getElementById('lote-units-selected-count');
+
+    if (!towerSelect || !container || !grid || !countSpan) return;
+
+    const tower = towerSelect.value;
+    const floorStr = floorSelect ? floorSelect.value : 'all';
+
+    if (!tower) {
+        container.classList.add('hidden');
+        grid.innerHTML = '';
+        countSpan.textContent = '0 de 0 selecionadas';
+        return;
+    }
+
+    const fIdx = FRENTES_SEQUENCIA.indexOf(activeFrente);
+    if (fIdx === -1) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    // Get matching units (pending in this activeFrente on selected tower)
+    const matchingUnits = projectState.units.filter(u => {
+        if (u.tower !== tower) return false;
+        const fData = u.frontsData[activeFrente] || {};
+        const isDone = fData.concluido;
+        const isActive = !isDone && u.activeFrontIndex === fIdx;
+        return isActive;
+    });
+
+    if (matchingUnits.length === 0) {
+        container.classList.add('hidden');
+        grid.innerHTML = '';
+        countSpan.textContent = '0 de 0 selecionadas';
+        return;
+    }
+
+    container.classList.remove('hidden');
+
+    // Get currently checked IDs to preserve them if user changes selection
+    const checkedIds = new Set(
+        Array.from(grid.querySelectorAll('.lote-unit-checkbox:checked')).map(cb => cb.value)
+    );
+
+    // If grid is empty or tower changed, default-check ALL
+    const currentTowerInGrid = grid.dataset.tower;
+    const wasEmpty = grid.children.length === 0 || currentTowerInGrid !== tower;
+    grid.dataset.tower = tower;
+
+    grid.innerHTML = '';
+
+    matchingUnits.forEach(u => {
+        const item = document.createElement('label');
+        item.className = 'lote-unit-item';
+        item.dataset.floor = u.floor;
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '8px';
+        item.style.padding = '6px 10px';
+        item.style.background = 'rgba(255,255,255,0.05)';
+        item.style.border = '1px solid var(--border-color)';
+        item.style.borderRadius = '6px';
+        item.style.cursor = 'pointer';
+        item.style.userSelect = 'none';
+        item.style.fontSize = '0.85rem';
+
+        const shouldBeChecked = wasEmpty ? true : checkedIds.has(u.id);
+
+        item.innerHTML = `
+            <input type="checkbox" class="lote-unit-checkbox" value="${u.id}" ${shouldBeChecked ? 'checked' : ''} style="cursor: pointer; width: 14px; height: 14px; accent-color: var(--primary-color);">
+            <span style="color: var(--text-primary); font-weight: 500;">
+                ${u.unit}
+                <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">${u.floor}º Pav</span>
+            </span>
+        `;
+
+        item.querySelector('.lote-unit-checkbox').addEventListener('change', updateLoteUnitsSelectedCount);
+
+        grid.appendChild(item);
+    });
+
+    // Apply floor filter visibility
+    filterLoteUnitsByFloor(floorStr);
+    updateLoteUnitsSelectedCount();
+}
+
+function filterLoteUnitsByFloor(floorStr) {
+    const grid = document.getElementById('lote-units-grid');
+    if (!grid) return;
+    const items = grid.querySelectorAll('.lote-unit-item');
+    items.forEach(item => {
+        if (floorStr === 'all' || item.dataset.floor === floorStr) {
+            item.classList.remove('hidden');
+            item.style.display = 'flex';
+        } else {
+            item.classList.add('hidden');
+            item.style.display = 'none';
+        }
+    });
+}
+
+function updateLoteUnitsSelectedCount() {
+    const grid = document.getElementById('lote-units-grid');
+    const countSpan = document.getElementById('lote-units-selected-count');
+    if (!grid || !countSpan) return;
+
+    const total = grid.querySelectorAll('.lote-unit-checkbox').length;
+    const checked = grid.querySelectorAll('.lote-unit-checkbox:checked').length;
+    countSpan.textContent = `${checked} de ${total} selecionadas`;
 }
 
 async function handleReopenFront(unitId, frenteName) {

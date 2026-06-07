@@ -1765,3 +1765,13 @@ h1, h2, h3, h4, h5, h6 {
     padding: 1rem;
     margin-bottom: 12px;
 }
+
+/* Seleção de Unidades em Lote */
+.lote-unit-item {
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
+}
+.lote-unit-item:hover {
+    background-color: var(--bg-card-hover) !important;
+    border-color: var(--primary-color) !important;
+}
+
