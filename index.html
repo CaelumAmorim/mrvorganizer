@@ -906,6 +906,54 @@
                             <span id="modal-unit-status-badge" class="badge">Ativo</span>
                         </div>
 
+                        <!-- Seletor de Status VH -->
+                        <div class="status-summary-box hidden" id="modal-unit-vh-status-container" style="margin-top: 10px;">
+                            <span class="label">Status VH (Vistoria Hidráulica)</span>
+                            <div class="front-selector-wrapper">
+                                <select id="modal-unit-vh-status-selector">
+                                    <option value="">Automático</option>
+                                    <option value="LIBERADO">LIBERADO</option>
+                                    <option value="AGENDADO">AGENDADO</option>
+                                    <option value="BLOQUEADO">BLOQUEADO</option>
+                                    <option value="INDISPONÍVEL">INDISPONÍVEL</option>
+                                    <option value="PERMUTANTE">PERMUTANTE</option>
+                                    <option value="REVISTORIA">REVISTORIA</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Seletor de Status VE -->
+                        <div class="status-summary-box hidden" id="modal-unit-ve-status-container" style="margin-top: 10px;">
+                            <span class="label">Status VE (Vistoria Elétrica)</span>
+                            <div class="front-selector-wrapper">
+                                <select id="modal-unit-ve-status-selector">
+                                    <option value="">Automático</option>
+                                    <option value="LIBERADO">LIBERADO</option>
+                                    <option value="AGENDADO">AGENDADO</option>
+                                    <option value="BLOQUEADO">BLOQUEADO</option>
+                                    <option value="INDISPONÍVEL">INDISPONÍVEL</option>
+                                    <option value="PERMUTANTE">PERMUTANTE</option>
+                                    <option value="REVISTORIA">REVISTORIA</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Seletor de Status VQ -->
+                        <div class="status-summary-box hidden" id="modal-unit-vq-status-container" style="margin-top: 10px;">
+                            <span class="label">Status VQ (Vistoria de Qualidade)</span>
+                            <div class="front-selector-wrapper">
+                                <select id="modal-unit-vq-status-selector">
+                                    <option value="">Automático</option>
+                                    <option value="LIBERADO">LIBERADO</option>
+                                    <option value="AGENDADO">AGENDADO</option>
+                                    <option value="BLOQUEADO">BLOQUEADO</option>
+                                    <option value="INDISPONÍVEL">INDISPONÍVEL</option>
+                                    <option value="PERMUTANTE">PERMUTANTE</option>
+                                    <option value="REVISTORIA">REVISTORIA</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <!-- Seletor de Status VA -->
                         <div class="status-summary-box hidden" id="modal-unit-va-status-container" style="margin-top: 10px;">
                             <span class="label">Status VA (Vistoria)</span>
@@ -1263,6 +1311,8 @@
                                 <option value="Pintura">Pintura</option>
                                 <option value="Check list">Check list</option>
                                 <option value="Limpeza">Limpeza</option>
+                                <option value="VH">VH (Vistoria Hidráulica)</option>
+                                <option value="VE">VE (Vistoria Elétrica)</option>
                                 <option value="VQ">VQ</option>
                                 <option value="VA">VA</option>
                             </select>

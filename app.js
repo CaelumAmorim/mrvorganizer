@@ -50,6 +50,8 @@ const FRENTES_SEQUENCIA = [
     "TORNEIRAS E METAIS",
     "Checklist",
     "Limpeza Fina",
+    "VH",
+    "VE",
     "VQ",
     "Passada de Pano",
     "VA"
@@ -87,6 +89,8 @@ const FRENTES_DESCRICOES = {
     "TORNEIRAS E METAIS": "Instalação de misturadores, torneiras, chuveiros e acessórios metálicos.",
     "Checklist": "Vistoria prévia da equipe para saneamento de pequenas pendências.",
     "Limpeza Fina": "Limpeza fina, polimento e higienização detalhada de todo o apartamento.",
+    "VH": "Vistoria Hidráulica. Qualquer item reprovado gera pendência no histórico.",
+    "VE": "Vistoria Elétrica. Qualquer item reprovado gera pendência no histórico.",
     "VQ": "Vistoria da Qualidade interna. Qualquer item reprovado gera pendência no histórico.",
     "Passada de Pano": "Limpeza leve final de piso e superfícies para recebimento do cliente.",
     "VA": "Vistoria de Entrega do Apartamento ao cliente final com registro de pendências."
@@ -125,6 +129,8 @@ const FRENTES_CORES = {
     "TORNEIRAS E METAIS": "#0891b2",
     "Checklist": "#0d9488",
     "Limpeza Fina": "#06b6d4",
+    "VH": "#0284c7",
+    "VE": "#8b5cf6",
     "VQ": "#eab308",
     "Passada de Pano": "#10b981",
     "VA": "#d97706",
@@ -225,6 +231,7 @@ async function checkDatabaseConnection() {
     // Ensure state indices and frentes config are fully migrated and loaded
     if (projectState) {
         await migrateUnitIndices();
+        await migrateUnitIndicesV2();
 
         if (!projectState.frentesConfig) {
             projectState.frentesConfig = {};
@@ -333,6 +340,28 @@ async function migrateUnitIndices() {
     });
 
     projectState.frentesMigrationRun = true;
+    await saveState();
+}
+
+async function migrateUnitIndicesV2() {
+    if (!projectState || !projectState.units) return;
+    if (projectState.frentesMigrationV2Run) return;
+    
+    console.log("Running quality gates index migration (V2) for VH/VE...");
+    
+    projectState.units.forEach(u => {
+        if (u.activeFrontIndex === 31) {
+            u.activeFrontIndex = 33; // VQ
+        } else if (u.activeFrontIndex === 32) {
+            u.activeFrontIndex = 34; // Passada de Pano
+        } else if (u.activeFrontIndex === 33) {
+            u.activeFrontIndex = 35; // VA
+        } else if (u.activeFrontIndex === 34) {
+            u.activeFrontIndex = 36; // Concluido
+        }
+    });
+    
+    projectState.frentesMigrationV2Run = true;
     await saveState();
 }
 
@@ -848,6 +877,48 @@ function setupEventListeners() {
     // Dropdown de alteração manual de frentes no Modal de Detalhes
     document.getElementById('modal-unit-active-front-selector').addEventListener('change', handleManualActiveFrontChange);
 
+    // Seletor de Status VH
+    document.getElementById('modal-unit-vh-status-selector').addEventListener('change', async (e) => {
+        const unitId = document.getElementById('modal-unit-title').dataset.unitId;
+        const u = projectState.units.find(x => x.id === unitId);
+        if (!u) return;
+        u.status_vh = e.target.value;
+        await saveState();
+        openUnitDetailsModal(u.id);
+        if (activePage === 'page-mapa') {
+            renderSummaryStats();
+            renderTowers();
+        }
+    });
+
+    // Seletor de Status VE
+    document.getElementById('modal-unit-ve-status-selector').addEventListener('change', async (e) => {
+        const unitId = document.getElementById('modal-unit-title').dataset.unitId;
+        const u = projectState.units.find(x => x.id === unitId);
+        if (!u) return;
+        u.status_ve = e.target.value;
+        await saveState();
+        openUnitDetailsModal(u.id);
+        if (activePage === 'page-mapa') {
+            renderSummaryStats();
+            renderTowers();
+        }
+    });
+
+    // Seletor de Status VQ
+    document.getElementById('modal-unit-vq-status-selector').addEventListener('change', async (e) => {
+        const unitId = document.getElementById('modal-unit-title').dataset.unitId;
+        const u = projectState.units.find(x => x.id === unitId);
+        if (!u) return;
+        u.status_vq = e.target.value;
+        await saveState();
+        openUnitDetailsModal(u.id);
+        if (activePage === 'page-mapa') {
+            renderSummaryStats();
+            renderTowers();
+        }
+    });
+
     // Seletor de Status VA
     document.getElementById('modal-unit-va-status-selector').addEventListener('change', async (e) => {
         const unitId = document.getElementById('modal-unit-title').dataset.unitId;
@@ -1173,26 +1244,67 @@ function navigateToPage(pageId) {
 // PAGE 1: MAPA GERAL METHODS
 // -------------------------------------------------------------
 
-function getUnitVAStatus(unit) {
-    const isVqDone = unit.frontsData && (unit.frontsData['VQ']?.concluido || unit.frontsData['VQ']?.concluido === true);
-    if (!isVqDone) {
-        return 'BLOQUEADO';
-    }
-    if (unit.status_va) {
-        return unit.status_va;
-    }
-    const hasVaPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
-    if (hasVaPending) {
-        return 'REPROVADO';
-    }
-    const isVaDone = unit.frontsData && (unit.frontsData['VA']?.concluido || unit.frontsData['VA']?.concluido === true);
-    if (isVaDone) {
+function getUnitQualityStatus(unit, frontName) {
+    if (unit.isHall) {
         return 'APROVADO';
     }
+
+    if (frontName === 'VH') {
+        const vhIdx = FRENTES_SEQUENCIA.indexOf('VH');
+        if (unit.activeFrontIndex < vhIdx) {
+            return 'BLOQUEADO';
+        }
+        if (unit.status_vh) return unit.status_vh;
+        const hasPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VH' && r.status === 'Pendente');
+        if (hasPending) return 'REPROVADO';
+        if (unit.frontsData && (unit.frontsData['VH']?.concluido || unit.frontsData['VH']?.concluido === true)) return 'APROVADO';
+        return 'LIBERADO';
+    }
+    
+    if (frontName === 'VE') {
+        const isVhDone = unit.frontsData && (unit.frontsData['VH']?.concluido || unit.frontsData['VH']?.concluido === true);
+        if (!isVhDone) {
+            return 'BLOQUEADO';
+        }
+        if (unit.status_ve) return unit.status_ve;
+        const hasPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VE' && r.status === 'Pendente');
+        if (hasPending) return 'REPROVADO';
+        if (unit.frontsData && (unit.frontsData['VE']?.concluido || unit.frontsData['VE']?.concluido === true)) return 'APROVADO';
+        return 'LIBERADO';
+    }
+    
+    if (frontName === 'VQ') {
+        const isVeDone = unit.frontsData && (unit.frontsData['VE']?.concluido || unit.frontsData['VE']?.concluido === true);
+        if (!isVeDone) {
+            return 'BLOQUEADO';
+        }
+        if (unit.status_vq) return unit.status_vq;
+        const hasPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
+        if (hasPending) return 'REPROVADO';
+        if (unit.frontsData && (unit.frontsData['VQ']?.concluido || unit.frontsData['VQ']?.concluido === true)) return 'APROVADO';
+        return 'LIBERADO';
+    }
+    
+    if (frontName === 'VA') {
+        const isVqDone = unit.frontsData && (unit.frontsData['VQ']?.concluido || unit.frontsData['VQ']?.concluido === true);
+        if (!isVqDone) {
+            return 'BLOQUEADO';
+        }
+        if (unit.status_va) return unit.status_va;
+        const hasPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
+        if (hasPending) return 'REPROVADO';
+        if (unit.frontsData && (unit.frontsData['VA']?.concluido || unit.frontsData['VA']?.concluido === true)) return 'APROVADO';
+        return 'LIBERADO';
+    }
+    
     return 'LIBERADO';
 }
 
-function compileVaStatsForScope(units, scopeName, totalObraUnits) {
+function getUnitVAStatus(unit) {
+    return getUnitQualityStatus(unit, 'VA');
+}
+
+function compileQualityStatsForScope(units, scopeName, totalObraUnits, frontName) {
     let aprovados = 0;
     let reprovados = 0;
     let liberado = 0;
@@ -1202,7 +1314,7 @@ function compileVaStatsForScope(units, scopeName, totalObraUnits) {
     let indisponivel = 0;
     
     units.forEach(u => {
-        const status = getUnitVAStatus(u);
+        const status = getUnitQualityStatus(u, frontName);
         if (status === 'APROVADO') aprovados++;
         else if (status === 'REPROVADO') reprovados++;
         else if (status === 'LIBERADO') liberado++;
@@ -1281,16 +1393,18 @@ function renderSummaryStats() {
     const vaSummaryEl = document.getElementById('dashboard-va-summary');
     const normalSummaryEl = document.querySelector('.dashboard-summary');
     
-    if (activeFilterFront === 'VA') {
+    const isQualityFrontFiltered = ['VA', 'VQ', 'VH', 'VE'].includes(activeFilterFront);
+    
+    if (isQualityFrontFiltered) {
         if (normalSummaryEl) normalSummaryEl.classList.add('hidden');
         if (vaSummaryEl) {
             vaSummaryEl.classList.remove('hidden');
             
             let html = `<div class="va-summary-container">`;
-            html += compileVaStatsForScope(projectState.units, "VISÃO GERAL OBRA", projectState.units.length);
+            html += compileQualityStatsForScope(projectState.units, "VISÃO GERAL OBRA", projectState.units.length, activeFilterFront);
             projectState.towers.forEach(t => {
                 const towerUnits = projectState.units.filter(u => u.tower === t.name);
-                html += compileVaStatsForScope(towerUnits, `VISÃO GERAL ${t.name.toUpperCase()}`, projectState.units.length);
+                html += compileQualityStatsForScope(towerUnits, `VISÃO GERAL ${t.name.toUpperCase()}`, projectState.units.length, activeFilterFront);
             });
             html += `</div>`;
             
@@ -1513,26 +1627,19 @@ function renderTowers() {
                         cellClass = `c-${frontName.toLowerCase().replace(/\s+/g, '')}`;
                     }
 
-                    // VQ / VA Filter Map Custom Coloring
-                    if (activeFilterFront === 'VQ') {
-                        const vqReprovas = matchedUnit.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
-                        if (vqReprovas) {
-                            cellClass = 'bg-red';
-                        } else {
-                            cellClass = 'bg-green';
-                        }
-                    } else if (activeFilterFront === 'VA') {
-                        const vaStatus = getUnitVAStatus(matchedUnit);
-                        cellClass = `va-${vaStatus.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}`;
+                    // VQ / VA / VH / VE Filter Map Custom Coloring
+                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
+                        const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
+                        cellClass = `va-${status.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}`;
                     }
                     
                     cell.classList.add(cellClass);
                     const displayText = matchedUnit.isHall ? 'H' : unitNum;
-                    if (activeFilterFront === 'VA') {
-                        const vaStatus = getUnitVAStatus(matchedUnit);
+                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
+                        const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
                         cell.innerHTML = `
                             <span class="unit-num" style="font-size: 0.8rem; font-weight: 700; line-height: 1.1;">${displayText}</span>
-                            <span class="va-status-label">${vaStatus}</span>
+                            <span class="va-status-label">${status}</span>
                         `;
                     } else {
                         cell.innerHTML = `<span class="unit-num">${displayText}</span>`;
@@ -1551,8 +1658,8 @@ function renderTowers() {
                     }
                     
                     let statusGeralText = matchedUnit.status_geral;
-                    if (activeFilterFront === 'VA') {
-                        statusGeralText = getUnitVAStatus(matchedUnit);
+                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
+                        statusGeralText = getUnitQualityStatus(matchedUnit, activeFilterFront);
                     }
                     cell.title = `${matchedUnit.tower} - ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Entrega dos Sonhos' : frontName}\nStatus: ${statusGeralText}`;
                     if (outOfOrder) cell.title += `\n⚠️ Fora de sequência!`;
@@ -1560,7 +1667,7 @@ function renderTowers() {
                     
                     // Dim cell if filtering is active and it doesn't match
                     let isMatch = activeFilterFront === frontName;
-                    if (activeFilterFront === 'VQ' || activeFilterFront === 'VA') {
+                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
                         isMatch = true;
                     }
                     
@@ -2678,6 +2785,39 @@ function openUnitDetailsModal(unitId, openTabId = 'modal-tab-workflow', openSubT
         selector.value = FRENTES_SEQUENCIA[u.activeFrontIndex];
     }
     
+    // VH status selector handling
+    const vhStatusContainer = document.getElementById('modal-unit-vh-status-container');
+    const vhSelector = document.getElementById('modal-unit-vh-status-selector');
+    const isVhUnlocked = u.activeFrontIndex >= FRENTES_SEQUENCIA.indexOf('VH');
+    if (isVhUnlocked) {
+        if (vhStatusContainer) vhStatusContainer.classList.remove('hidden');
+        if (vhSelector) vhSelector.value = u.status_vh || "";
+    } else {
+        if (vhStatusContainer) vhStatusContainer.classList.add('hidden');
+    }
+
+    // VE status selector handling
+    const veStatusContainer = document.getElementById('modal-unit-ve-status-container');
+    const veSelector = document.getElementById('modal-unit-ve-status-selector');
+    const isVhDone = u.frontsData && (u.frontsData['VH']?.concluido || u.frontsData['VH']?.concluido === true);
+    if (isVhDone) {
+        if (veStatusContainer) veStatusContainer.classList.remove('hidden');
+        if (veSelector) veSelector.value = u.status_ve || "";
+    } else {
+        if (veStatusContainer) veStatusContainer.classList.add('hidden');
+    }
+
+    // VQ status selector handling
+    const vqStatusContainer = document.getElementById('modal-unit-vq-status-container');
+    const vqSelector = document.getElementById('modal-unit-vq-status-selector');
+    const isVeDone = u.frontsData && (u.frontsData['VE']?.concluido || u.frontsData['VE']?.concluido === true);
+    if (isVeDone) {
+        if (vqStatusContainer) vqStatusContainer.classList.remove('hidden');
+        if (vqSelector) vqSelector.value = u.status_vq || "";
+    } else {
+        if (vqStatusContainer) vqStatusContainer.classList.add('hidden');
+    }
+
     // VA status selector handling
     const vaStatusContainer = document.getElementById('modal-unit-va-status-container');
     const vaSelector = document.getElementById('modal-unit-va-status-selector');
@@ -2840,11 +2980,14 @@ function openUnitDetailsModal(unitId, openTabId = 'modal-tab-workflow', openSubT
     }
 
 
-    // Show Add Reprova button if unit is in VQ or VA step
+    // Show Add Reprova button if unit is in VH, VE, VQ or VA step
     const btnAddRep = document.getElementById('modal-btn-add-reprova');
+    const vhIdx = FRENTES_SEQUENCIA.indexOf("VH");
+    const veIdx = FRENTES_SEQUENCIA.indexOf("VE");
     const vqIdx = FRENTES_SEQUENCIA.indexOf("VQ");
     const vaIdx = FRENTES_SEQUENCIA.indexOf("VA");
-    if ((u.activeFrontIndex === vqIdx || u.activeFrontIndex === vaIdx) && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
+    const isQualityActive = [vhIdx, veIdx, vqIdx, vaIdx].includes(u.activeFrontIndex);
+    if (isQualityActive && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
         btnAddRep.classList.remove('hidden');
     } else {
         btnAddRep.classList.add('hidden');
@@ -3326,6 +3469,10 @@ function openAddReprovaModal(unitId) {
         matchedOption = "VQ";
     } else if (activeFrontName === "VA") {
         matchedOption = "VA";
+    } else if (activeFrontName === "VH") {
+        matchedOption = "VH";
+    } else if (activeFrontName === "VE") {
+        matchedOption = "VE";
     }
     document.getElementById('rep-servico-tipo').value = matchedOption;
     
@@ -3791,7 +3938,7 @@ async function handleBulkReprovasSave() {
 }
 
 function checkAndAdvanceQualityFront(unit, frontName) {
-    if (frontName !== 'VQ' && frontName !== 'VA') return;
+    if (frontName !== 'VH' && frontName !== 'VE' && frontName !== 'VQ' && frontName !== 'VA') return;
     
     // If the unit's active front is not this front, do nothing
     const activeFrontName = FRENTES_SEQUENCIA[unit.activeFrontIndex];
@@ -3808,10 +3955,11 @@ function checkAndAdvanceQualityFront(unit, frontName) {
         const fData = unit.frontsData[frontName];
         fData.concluido = false;
         
-        // Reset status_va to LIBERADO so it returns to being inspectable
-        if (frontName === 'VA') {
-            unit.status_va = 'LIBERADO';
-        }
+        // Reset manual status to LIBERADO so it returns to being inspectable
+        if (frontName === 'VA') unit.status_va = 'LIBERADO';
+        else if (frontName === 'VQ') unit.status_vq = 'LIBERADO';
+        else if (frontName === 'VH') unit.status_vh = 'LIBERADO';
+        else if (frontName === 'VE') unit.status_ve = 'LIBERADO';
         
         // Update general status
         unit.status_geral = 'Ativo';
@@ -3821,9 +3969,10 @@ function checkAndAdvanceQualityFront(unit, frontName) {
         if (unit.frontsData[frontName]) {
             unit.frontsData[frontName].concluido = false;
         }
-        if (frontName === 'VA') {
-            unit.status_va = 'REPROVADO';
-        }
+        if (frontName === 'VA') unit.status_va = 'REPROVADO';
+        else if (frontName === 'VQ') unit.status_vq = 'REPROVADO';
+        else if (frontName === 'VH') unit.status_vh = 'REPROVADO';
+        else if (frontName === 'VE') unit.status_ve = 'REPROVADO';
     }
 }
 
