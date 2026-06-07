@@ -2072,6 +2072,7 @@ function renderFrenteDetails() {
         }
 
         // Ações condicionais
+        const isQualityFront = ['VH', 'VE', 'VQ', 'VA'].includes(activeFrente);
         let actionBtn = "";
         const userRole = currentUser ? currentUser.role : 'fiscal';
         const isReadOnly = userRole === 'diretor';
@@ -2085,7 +2086,7 @@ function renderFrenteDetails() {
             } else {
                 actionBtn = `<button class="btn btn-xs btn-outline btn-unit-reopen" data-id="${u.id}" disabled style="opacity: 0.4; cursor: not-allowed; color: var(--text-secondary); border-color: var(--border-color);" title="Sem permissão para esta frente de serviço"><i class="fa fa-arrow-rotate-left"></i> Desfazer</button>`;
             }
-        } else if (isActive) {
+        } else if (isActive || isQualityFront) {
             if (!isReadOnly && isFrontAllowed) {
                 actionBtn = `<button class="btn btn-xs btn-primary btn-unit-update" data-id="${u.id}"><i class="fa fa-pen"></i> Alimentar</button>`;
             } else if (isReadOnly) {
@@ -2098,7 +2099,7 @@ function renderFrenteDetails() {
         }
 
         let reprovaBtn = "";
-        if (isActive && (activeFrente === 'VQ' || activeFrente === 'VA') && !isReadOnly && isFrontAllowed) {
+        if ((isActive || isQualityFront) && ['VQ', 'VA', 'VH', 'VE'].includes(activeFrente) && !isReadOnly && isFrontAllowed) {
             reprovaBtn = `
                 <button class="btn btn-xs btn-danger btn-unit-reprova" data-id="${u.id}" style="background-color: var(--status-reprovado); border-color: var(--status-reprovado); color: white;" title="Registrar Reprova Individual"><i class="fa fa-triangle-exclamation"></i> Reprova</button>
                 <button class="btn btn-xs btn-outline btn-unit-reprova-lote" data-id="${u.id}" style="color: var(--status-reprovado); border-color: var(--status-reprovado);" title="Inserir Dados em Lote"><i class="fa fa-layer-group"></i> Inserir em Lote</button>
@@ -2127,9 +2128,9 @@ function renderFrenteDetails() {
         tr.querySelector('.btn-unit-view').addEventListener('click', () => openUnitDetailsModal(u.id));
         if (isDone && canReopen) {
             tr.querySelector('.btn-unit-reopen').addEventListener('click', () => handleReopenFront(u.id, activeFrente));
-        } else if (isActive && !isReadOnly && isFrontAllowed) {
+        } else if ((isActive || isQualityFront) && !isReadOnly && isFrontAllowed) {
             tr.querySelector('.btn-unit-update').addEventListener('click', () => openUpdateFrontModal(u.id, activeFrente));
-            if (activeFrente === 'VQ' || activeFrente === 'VA') {
+            if (['VQ', 'VA', 'VH', 'VE'].includes(activeFrente)) {
                 tr.querySelector('.btn-unit-reprova').addEventListener('click', () => openAddReprovaModal(u.id));
                 const btnLote = tr.querySelector('.btn-unit-reprova-lote');
                 if (btnLote) {
@@ -2788,45 +2789,33 @@ function openUnitDetailsModal(unitId, openTabId = 'modal-tab-workflow', openSubT
     // VH status selector handling
     const vhStatusContainer = document.getElementById('modal-unit-vh-status-container');
     const vhSelector = document.getElementById('modal-unit-vh-status-selector');
-    const isVhUnlocked = u.activeFrontIndex >= FRENTES_SEQUENCIA.indexOf('VH');
-    if (isVhUnlocked) {
-        if (vhStatusContainer) vhStatusContainer.classList.remove('hidden');
+    if (vhStatusContainer) {
+        vhStatusContainer.classList.remove('hidden');
         if (vhSelector) vhSelector.value = u.status_vh || "";
-    } else {
-        if (vhStatusContainer) vhStatusContainer.classList.add('hidden');
     }
 
     // VE status selector handling
     const veStatusContainer = document.getElementById('modal-unit-ve-status-container');
     const veSelector = document.getElementById('modal-unit-ve-status-selector');
-    const isVhDone = u.frontsData && (u.frontsData['VH']?.concluido || u.frontsData['VH']?.concluido === true);
-    if (isVhDone) {
-        if (veStatusContainer) veStatusContainer.classList.remove('hidden');
+    if (veStatusContainer) {
+        veStatusContainer.classList.remove('hidden');
         if (veSelector) veSelector.value = u.status_ve || "";
-    } else {
-        if (veStatusContainer) veStatusContainer.classList.add('hidden');
     }
 
     // VQ status selector handling
     const vqStatusContainer = document.getElementById('modal-unit-vq-status-container');
     const vqSelector = document.getElementById('modal-unit-vq-status-selector');
-    const isVeDone = u.frontsData && (u.frontsData['VE']?.concluido || u.frontsData['VE']?.concluido === true);
-    if (isVeDone) {
-        if (vqStatusContainer) vqStatusContainer.classList.remove('hidden');
+    if (vqStatusContainer) {
+        vqStatusContainer.classList.remove('hidden');
         if (vqSelector) vqSelector.value = u.status_vq || "";
-    } else {
-        if (vqStatusContainer) vqStatusContainer.classList.add('hidden');
     }
 
     // VA status selector handling
     const vaStatusContainer = document.getElementById('modal-unit-va-status-container');
     const vaSelector = document.getElementById('modal-unit-va-status-selector');
-    const isVqDone = u.frontsData && (u.frontsData['VQ']?.concluido || u.frontsData['VQ']?.concluido === true);
-    if (isVqDone) {
-        if (vaStatusContainer) vaStatusContainer.classList.remove('hidden');
+    if (vaStatusContainer) {
+        vaStatusContainer.classList.remove('hidden');
         if (vaSelector) vaSelector.value = u.status_va || "";
-    } else {
-        if (vaStatusContainer) vaStatusContainer.classList.add('hidden');
     }
     
     // Status Badge
