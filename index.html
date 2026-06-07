@@ -376,9 +376,12 @@
 
                     <!-- Filtro do Mapa Geral (Frentes de serviço de interesse) -->
                     <div class="filter-panel card">
-                        <div class="panel-header">
+                        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <h3><i class="fa fa-filter"></i> Legenda & Filtro de Frentes</h3>
-                            <button id="btn-clear-map-filter" class="btn btn-xs btn-outline hidden">Limpar Filtro</button>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="btn-batch-approve-trigger" class="btn btn-xs btn-primary hidden" style="background-color: var(--primary-color); border-color: var(--primary-color); color: white; display: flex; align-items: center; gap: 4px;"><i class="fa fa-list-check"></i> Aprovar em Lote (Engenheiro)</button>
+                                <button id="btn-clear-map-filter" class="btn btn-xs btn-outline hidden">Limpar Filtro</button>
+                            </div>
                         </div>
                         <div class="frentes-legend-grid" id="map-frentes-legend">
                             <!-- Inserido dinamicamente via JS -->
@@ -1513,6 +1516,72 @@
                 <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="button" class="btn btn-outline modal-close">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar Senha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: APROVAR EM LOTE (ENGENHEIRO) -->
+    <div id="modal-batch-approval" class="modal-overlay hidden">
+        <div class="modal-card" style="width: 650px; max-width: 95%;">
+            <div class="modal-header">
+                <h2><i class="fa fa-list-check text-success"></i> Aprovar Serviços em Lote</h2>
+                <button class="btn-close modal-close"><i class="fa fa-xmark"></i></button>
+            </div>
+            <form id="form-batch-approve">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-style: italic;">
+                        Selecione as unidades e as frentes de serviço que deseja aprovar simultaneamente.
+                    </p>
+                    
+                    <div style="display: flex; gap: 12px;">
+                        <!-- Coluna 1: Unidades -->
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">1. Selecione as Unidades</label>
+                            
+                            <div style="display: flex; gap: 6px;">
+                                <select id="batch-approve-tower-select" class="input-glow" style="flex: 1; padding: 4px 8px; font-size: 0.8rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                                    <option value="all">Todas as Torres</option>
+                                    <option value="Torre 01">Torre 01</option>
+                                    <option value="Torre 02">Torre 02</option>
+                                </select>
+                                <button type="button" id="btn-batch-approve-select-all-units" class="btn btn-xs btn-outline" style="font-size: 0.75rem;">Selecionar Todas</button>
+                            </div>
+
+                            <div id="batch-approve-units-list" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-secondary); padding: 8px; max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                                <!-- Preenchido dinamicamente com checkboxes das unidades -->
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Frentes de Serviço -->
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">2. Selecione as Frentes</label>
+                            
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="button" id="btn-batch-approve-select-all-fronts" class="btn btn-xs btn-outline" style="font-size: 0.75rem;">Selecionar Todas</button>
+                            </div>
+
+                            <div id="batch-approve-fronts-list" style="border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-secondary); padding: 8px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                                <!-- Preenchido dinamicamente com checkboxes das frentes -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalhes da Aprovação -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 10px; display: flex; gap: 12px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="batch-approve-date" style="font-size: 0.8rem; font-weight: 600;">Data da Aprovação</label>
+                            <input type="date" id="batch-approve-date" required class="input-glow" style="width: 100%; padding: 6px; font-size: 0.8rem;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="batch-approve-resp" style="font-size: 0.8rem; font-weight: 600;">Responsável</label>
+                            <input type="text" id="batch-approve-resp" placeholder="Ex: Eng. Roberto" required class="input-glow" style="width: 100%; padding: 6px; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn btn-outline modal-close">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-circle-check"></i> Aprovar Selecionados</button>
                 </div>
             </form>
         </div>

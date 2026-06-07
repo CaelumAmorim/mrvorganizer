@@ -975,6 +975,28 @@ function setupEventListeners() {
             checkAuthSession();
         });
     });
+
+    // Batch approval listeners
+    const btnBatchTrigger = document.getElementById('btn-batch-approve-trigger');
+    if (btnBatchTrigger) {
+        btnBatchTrigger.addEventListener('click', openBatchApprovalModal);
+    }
+    const towerSelect = document.getElementById('batch-approve-tower-select');
+    if (towerSelect) {
+        towerSelect.addEventListener('change', populateBatchApproveUnitsList);
+    }
+    const btnSelectAllUnits = document.getElementById('btn-batch-approve-select-all-units');
+    if (btnSelectAllUnits) {
+        btnSelectAllUnits.addEventListener('click', toggleSelectAllUnits);
+    }
+    const btnSelectAllFronts = document.getElementById('btn-batch-approve-select-all-fronts');
+    if (btnSelectAllFronts) {
+        btnSelectAllFronts.addEventListener('click', toggleSelectAllFronts);
+    }
+    const formBatchApprove = document.getElementById('form-batch-approve');
+    if (formBatchApprove) {
+        formBatchApprove.addEventListener('submit', handleBatchApproveSubmit);
+    }
 }
 
 // Login Success Routing
@@ -1057,6 +1079,16 @@ function loginSuccess(user) {
         userRoleIcon.className = 'fa fa-user';
     }
 
+    const isEngineerOrHigher = ['admin', 'engenheiro', 'gestor', 'diretor'].includes(user.role);
+    const btnBatchTrigger = document.getElementById('btn-batch-approve-trigger');
+    if (btnBatchTrigger) {
+        if (isEngineerOrHigher) {
+            btnBatchTrigger.classList.remove('hidden');
+        } else {
+            btnBatchTrigger.classList.add('hidden');
+        }
+    }
+
     const canConfig = user.role === 'admin' || user.role === 'engenheiro' || user.role === 'gestor';
     if (canConfig) {
         document.querySelectorAll('.config-allowed').forEach(el => el.classList.remove('hidden'));
@@ -1130,12 +1162,12 @@ function navigateToPage(pageId) {
 // -------------------------------------------------------------
 
 function getUnitVAStatus(unit) {
-    if (unit.status_va) {
-        return unit.status_va;
-    }
     const isVqDone = unit.frontsData && (unit.frontsData['VQ']?.concluido || unit.frontsData['VQ']?.concluido === true);
     if (!isVqDone) {
         return 'BLOQUEADO';
+    }
+    if (unit.status_va) {
+        return unit.status_va;
     }
     const hasVaPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
     if (hasVaPending) {
@@ -2718,6 +2750,23 @@ function openUnitDetailsModal(unitId) {
                 ${matText}
             </div>
         `;
+
+        if (fData.concluido || u.activeFrontIndex === idx) {
+            item.style.cursor = 'pointer';
+            item.title = "Clique para editar ou alterar a data deste serviço";
+            
+            const header = item.querySelector('.timeline-header');
+            if (header) {
+                const editIndicator = document.createElement('span');
+                editIndicator.innerHTML = ` <i class="fa fa-pen" style="font-size: 0.7rem; color: var(--primary-color);" title="Editar"></i>`;
+                header.appendChild(editIndicator);
+            }
+
+            item.addEventListener('click', () => {
+                openUpdateFrontModal(u.id, f);
+            });
+        }
+
         timeline.appendChild(item);
     });
 
@@ -2925,6 +2974,17 @@ function saveUpdateFrontFields(unitId, frenteName, isConcluido) {
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
 
+    if (!u.frontsData[frenteName]) {
+        u.frontsData[frenteName] = {
+            responsavel: "",
+            dataInicio: "",
+            dataFinal: "",
+            duracaoProj: 0,
+            duracaoReal: 0,
+            concluido: false,
+            materials: {}
+        };
+    }
     const fData = u.frontsData[frenteName];
     fData.responsavel = document.getElementById('update-resp').value.trim();
     fData.duracaoProj = parseFloat(document.getElementById('update-dur-proj').value) || 1;
@@ -2942,14 +3002,29 @@ function saveUpdateFrontFields(unitId, frenteName, isConcluido) {
         }
         fData.concluido = true;
 
-        // Advance to next service front
-        u.activeFrontIndex++;
+        // Recalculate active front index based on sequential completion
+        let newIndex = 0;
+        for (let i = 0; i < FRENTES_SEQUENCIA.length; i++) {
+            const f = FRENTES_SEQUENCIA[i];
+            if (u.frontsData[f] && u.frontsData[f].concluido) {
+                newIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+        u.activeFrontIndex = newIndex;
+
+        // If the front is VA, set status_va to APROVADO
+        if (frenteName === 'VA') {
+            u.status_va = 'APROVADO';
+        }
         
         // Update general status
         if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
             u.status_geral = 'Aprovado';
         } else {
-            u.status_geral = 'Ativo';
+            const hasPending = u.reprovas && u.reprovas.some(r => r.status === 'Pendente');
+            u.status_geral = hasPending ? 'Reprovado' : 'Ativo';
         }
     }
 
@@ -3326,6 +3401,218 @@ function updateBulkWizardStep(step) {
             btnSave.classList.add('hidden');
             btnSave.style.display = 'none';
         }
+    }
+}
+
+function openBatchApprovalModal() {
+    const modal = document.getElementById('modal-batch-approval');
+    if (!modal) return;
+
+    // Set default date to today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('batch-approve-date').value = `${yyyy}-${mm}-${dd}`;
+
+    // Set default responsible to currentUser name
+    document.getElementById('batch-approve-resp').value = currentUser ? currentUser.name : '';
+
+    // Reset tower select to 'all'
+    const towerSelect = document.getElementById('batch-approve-tower-select');
+    if (towerSelect) towerSelect.value = 'all';
+
+    allUnitsSelected = false;
+    allFrontsSelected = false;
+    const btnAllUnits = document.getElementById('btn-batch-approve-select-all-units');
+    if (btnAllUnits) btnAllUnits.textContent = 'Selecionar Todas';
+    const btnAllFronts = document.getElementById('btn-batch-approve-select-all-fronts');
+    if (btnAllFronts) btnAllFronts.textContent = 'Selecionar Todas';
+
+    // Populate units and fronts lists
+    populateBatchApproveUnitsList();
+    populateBatchApproveFrontsList();
+
+    modal.classList.remove('hidden');
+}
+
+function populateBatchApproveUnitsList() {
+    const listContainer = document.getElementById('batch-approve-units-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    const selectedTower = document.getElementById('batch-approve-tower-select').value;
+    
+    // Filter units based on tower selection
+    const filteredUnits = projectState.units.filter(u => {
+        if (selectedTower !== 'all' && u.tower !== selectedTower) return false;
+        return true;
+    });
+
+    // Sort units by tower and unit number
+    filteredUnits.sort((a, b) => {
+        if (a.tower !== b.tower) return a.tower.localeCompare(b.tower);
+        return a.unit.localeCompare(b.unit, undefined, { numeric: true });
+    });
+
+    filteredUnits.forEach(u => {
+        const label = document.createElement('label');
+        label.style.cssText = 'font-size: 0.75rem; display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-card); cursor: pointer;';
+        
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'batch-approve-unit-cb';
+        cb.value = u.id;
+        cb.checked = allUnitsSelected;
+        
+        const span = document.createElement('span');
+        span.textContent = `${u.tower} - ${u.unit}`;
+        
+        label.appendChild(cb);
+        label.appendChild(span);
+        listContainer.appendChild(label);
+    });
+}
+
+function populateBatchApproveFrontsList() {
+    const listContainer = document.getElementById('batch-approve-fronts-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    // Render checkbox for each front
+    FRENTES_SEQUENCIA.forEach(f => {
+        const label = document.createElement('label');
+        label.style.cssText = 'font-size: 0.75rem; display: flex; align-items: center; gap: 6px; padding: 4px; cursor: pointer; color: var(--text-primary);';
+        
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'batch-approve-front-cb';
+        cb.value = f;
+        cb.checked = allFrontsSelected;
+        
+        const span = document.createElement('span');
+        span.textContent = f;
+        
+        label.appendChild(cb);
+        label.appendChild(span);
+        listContainer.appendChild(label);
+    });
+}
+
+let allUnitsSelected = false;
+function toggleSelectAllUnits() {
+    const cbs = document.querySelectorAll('.batch-approve-unit-cb');
+    allUnitsSelected = !allUnitsSelected;
+    cbs.forEach(cb => cb.checked = allUnitsSelected);
+    
+    const btn = document.getElementById('btn-batch-approve-select-all-units');
+    if (btn) {
+        btn.textContent = allUnitsSelected ? 'Desmarcar Todas' : 'Selecionar Todas';
+    }
+}
+
+let allFrontsSelected = false;
+function toggleSelectAllFronts() {
+    const cbs = document.querySelectorAll('.batch-approve-front-cb');
+    allFrontsSelected = !allFrontsSelected;
+    cbs.forEach(cb => cb.checked = allFrontsSelected);
+
+    const btn = document.getElementById('btn-batch-approve-select-all-fronts');
+    if (btn) {
+        btn.textContent = allFrontsSelected ? 'Desmarcar Todas' : 'Selecionar Todas';
+    }
+}
+
+async function handleBatchApproveSubmit(e) {
+    e.preventDefault();
+
+    // Get selected units
+    const selectedUnitCbs = document.querySelectorAll('.batch-approve-unit-cb:checked');
+    const selectedUnitIds = Array.from(selectedUnitCbs).map(cb => cb.value);
+
+    // Get selected fronts
+    const selectedFrontCbs = document.querySelectorAll('.batch-approve-front-cb:checked');
+    const selectedFrontNames = Array.from(selectedFrontCbs).map(cb => cb.value);
+
+    if (selectedUnitIds.length === 0) {
+        alert("Por favor, selecione ao menos uma unidade.");
+        return;
+    }
+    if (selectedFrontNames.length === 0) {
+        alert("Por favor, selecione ao menos uma frente de serviço.");
+        return;
+    }
+
+    const rawDate = document.getElementById('batch-approve-date').value;
+    const formattedDate = convertYMDToDMY(rawDate) || new Date().toLocaleDateString('pt-BR');
+    const responsavel = document.getElementById('batch-approve-resp').value.trim() || "Engenharia";
+
+    let approvedCount = 0;
+
+    selectedUnitIds.forEach(uId => {
+        const u = projectState.units.find(x => x.id === uId);
+        if (!u) return;
+
+        selectedFrontNames.forEach(fName => {
+            if (!u.frontsData[fName]) {
+                u.frontsData[fName] = {
+                    responsavel: "",
+                    dataInicio: "",
+                    dataFinal: "",
+                    duracaoProj: 0,
+                    duracaoReal: 0,
+                    concluido: false,
+                    materials: {}
+                };
+            }
+
+            const fData = u.frontsData[fName];
+            fData.concluido = true;
+            fData.responsavel = responsavel;
+            fData.dataFinal = formattedDate;
+
+            // If the front is VA, set status_va to APROVADO
+            if (fName === 'VA') {
+                u.status_va = 'APROVADO';
+            }
+            approvedCount++;
+        });
+
+        // Recalculate activeFrontIndex sequentially
+        let newIndex = 0;
+        for (let i = 0; i < FRENTES_SEQUENCIA.length; i++) {
+            const f = FRENTES_SEQUENCIA[i];
+            if (u.frontsData[f] && u.frontsData[f].concluido) {
+                newIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+        u.activeFrontIndex = newIndex;
+
+        // Update general status
+        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
+            u.status_geral = 'Aprovado';
+        } else {
+            const hasPending = u.reprovas && u.reprovas.some(r => r.status === 'Pendente');
+            u.status_geral = hasPending ? 'Reprovado' : 'Ativo';
+        }
+    });
+
+    await saveState();
+
+    const modal = document.getElementById('modal-batch-approval');
+    if (modal) modal.classList.add('hidden');
+
+    alert(`Aprovação em lote realizada com sucesso! Foram aprovados ${approvedCount} serviços.`);
+
+    // Refresh active page
+    if (activePage === 'page-mapa') {
+        renderSummaryStats();
+        renderTowers();
+    } else if (activePage === 'page-frentes') {
+        renderFrentesSubtabs();
+        renderFrenteDetails();
     }
 }
 
