@@ -1667,3 +1667,75 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--primary-color) !important;
     box-shadow: 0 4px 12px var(--primary-glow) !important;
 }
+
+/* VA Specific Cell Styles */
+.unit-cell.va-aprovado { background-color: #dcfce7 !important; color: #15803d !important; border-color: #86efac !important; }
+.unit-cell.va-reprovado { background-color: #fee2e2 !important; color: #b91c1c !important; border-color: #fca5a5 !important; }
+.unit-cell.va-liberado { background-color: #ffedd5 !important; color: #c2410c !important; border-color: #fed7aa !important; }
+.unit-cell.va-bloqueado { background-color: #f3e8ff !important; color: #7e22ce !important; border-color: #e9d5ff !important; }
+.unit-cell.va-agendado { background-color: #e0f2fe !important; color: #0369a1 !important; border-color: #bae6fd !important; }
+.unit-cell.va-indisponivel { background-color: #f3f4f6 !important; color: #374151 !important; border-color: #d1d5db !important; }
+.unit-cell.va-permutante { background-color: #fef9c3 !important; color: #a16207 !important; border-color: #fef08a !important; }
+.unit-cell.va-revistoria { background-color: #fce7f3 !important; color: #be185d !important; border-color: #fbcfe8 !important; }
+
+.unit-cell .va-status-label {
+    font-size: 0.52rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+
+/* VA Summary Tables Styles */
+.va-summary-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+.va-summary-card {
+    flex: 1;
+    min-width: 280px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+}
+.va-summary-title {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+    color: var(--text-primary);
+}
+.va-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.va-summary-table th, .va-summary-table td {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+}
+.va-summary-table th {
+    background-color: rgba(0, 0, 0, 0.2);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.va-summary-table td.indicator {
+    font-weight: 700;
+}
+.va-summary-table td.value {
+    text-align: center;
+    font-weight: 600;
+}
+.va-summary-table td.percentage {
+    text-align: right;
+    font-weight: 600;
+}
+.va-row-aprovado { background-color: rgba(74, 222, 128, 0.08); color: #4ade80; }
+.va-row-reprovado { background-color: rgba(248, 113, 113, 0.08); color: #f87171; }
+.va-row-realizadas { background-color: rgba(156, 163, 175, 0.08); color: #9ca3af; }

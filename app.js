@@ -802,6 +802,20 @@ function setupEventListeners() {
     // Dropdown de alteração manual de frentes no Modal de Detalhes
     document.getElementById('modal-unit-active-front-selector').addEventListener('change', handleManualActiveFrontChange);
 
+    // Seletor de Status VA
+    document.getElementById('modal-unit-va-status-selector').addEventListener('change', async (e) => {
+        const unitId = document.getElementById('modal-unit-title').dataset.unitId;
+        const u = projectState.units.find(x => x.id === unitId);
+        if (!u) return;
+        u.status_va = e.target.value;
+        await saveState();
+        openUnitDetailsModal(u.id);
+        if (activePage === 'page-mapa') {
+            renderSummaryStats();
+            renderTowers();
+        }
+    });
+
     // Filtros dinâmicos da tabela de frentes de serviço
     document.getElementById('filter-frente-tower').addEventListener('change', renderFrenteDetails);
     document.getElementById('filter-frente-status').addEventListener('change', renderFrenteDetails);
@@ -1081,54 +1095,181 @@ function navigateToPage(pageId) {
 // PAGE 1: MAPA GERAL METHODS
 // -------------------------------------------------------------
 
-function renderSummaryStats() {
-    const totalUnits = projectState.units.length;
-    let vqAprovados = 0;
-    let vqReprovados = 0;
-    let vaAprovados = 0;
-    let vaReprovados = 0;
-    let ativas = 0;
-    let totalProgressSum = 0;
+function getUnitVAStatus(unit) {
+    if (unit.status_va) {
+        return unit.status_va;
+    }
+    const isVqDone = unit.frontsData && (unit.frontsData['VQ']?.concluido || unit.frontsData['VQ']?.concluido === true);
+    if (!isVqDone) {
+        return 'BLOQUEADO';
+    }
+    const hasVaPending = unit.reprovas && unit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
+    if (hasVaPending) {
+        return 'REPROVADO';
+    }
+    const isVaDone = unit.frontsData && (unit.frontsData['VA']?.concluido || unit.frontsData['VA']?.concluido === true);
+    if (isVaDone) {
+        return 'APROVADO';
+    }
+    return 'LIBERADO';
+}
 
-    projectState.units.forEach(u => {
-        totalProgressSum += u.activeFrontIndex;
-        
-        if (u.activeFrontIndex > 0 && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
-            ativas++;
-        }
-        
-        // VQ Checks: Reproved if there is any pending VQ reprova; Approved if VQ is completed and no pending VQ reprova
-        const hasVqPending = u.reprovas && u.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
-        const isVqDone = u.frontsData && u.frontsData['VQ'] && u.frontsData['VQ'].concluido;
-        if (hasVqPending) {
-            vqReprovados++;
-        } else if (isVqDone) {
-            vqAprovados++;
-        }
-
-        // VA Checks: Reproved if there is any pending VA reprova; Approved if VA is completed and no pending VA reprova
-        const hasVaPending = u.reprovas && u.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
-        const isVaDone = u.frontsData && u.frontsData['VA'] && u.frontsData['VA'].concluido;
-        if (hasVaPending) {
-            vaReprovados++;
-        } else if (isVaDone) {
-            vaAprovados++;
-        }
+function compileVaStatsForScope(units, scopeName, totalObraUnits) {
+    let aprovados = 0;
+    let reprovados = 0;
+    let liberado = 0;
+    let revistoria = 0;
+    let bloqueado = 0;
+    let agendado = 0;
+    let indisponivel = 0;
+    
+    units.forEach(u => {
+        const status = getUnitVAStatus(u);
+        if (status === 'APROVADO') aprovados++;
+        else if (status === 'REPROVADO') reprovados++;
+        else if (status === 'LIBERADO') liberado++;
+        else if (status === 'REVISTORIA') revistoria++;
+        else if (status === 'BLOQUEADO') bloqueado++;
+        else if (status === 'AGENDADO') agendado++;
+        else if (status === 'INDISPONÍVEL') indisponivel++;
     });
+    
+    const realizadas = aprovados + reprovados;
+    
+    const getPct = (val) => {
+        if (totalObraUnits === 0) return "0,00%";
+        return ((val / totalObraUnits) * 100).toFixed(2).replace('.', ',') + '%';
+    };
+    
+    return `
+        <div class="va-summary-card">
+            <h4 class="va-summary-title">${scopeName}</h4>
+            <table class="va-summary-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">INDICADORES</th>
+                        <th style="text-align: center; width: 80px;">RESULTADOS</th>
+                        <th style="text-align: right; width: 60px;">(%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="va-row-aprovado">
+                        <td class="indicator">APROVADOS</td>
+                        <td class="value">${aprovados}</td>
+                        <td class="percentage" style="color: #4ade80;">${getPct(aprovados)}</td>
+                    </tr>
+                    <tr class="va-row-reprovado">
+                        <td class="indicator">REPROVADOS</td>
+                        <td class="value">${reprovados}</td>
+                        <td class="percentage" style="color: #f87171;">${getPct(reprovados)}</td>
+                    </tr>
+                    <tr class="va-row-realizadas">
+                        <td class="indicator">REALIZADAS</td>
+                        <td class="value">${realizadas}</td>
+                        <td class="percentage" style="color: #9ca3af;">${getPct(realizadas)}</td>
+                    </tr>
+                    <tr>
+                        <td class="indicator">LIBERADO</td>
+                        <td class="value">${liberado}</td>
+                        <td class="percentage" style="color: #f97316;">${getPct(liberado)}</td>
+                    </tr>
+                    <tr>
+                        <td class="indicator">REVISTORIA</td>
+                        <td class="value">${revistoria}</td>
+                        <td class="percentage" style="color: #ec4899;">${getPct(revistoria)}</td>
+                    </tr>
+                    <tr>
+                        <td class="indicator">BLOQUEADO</td>
+                        <td class="value">${bloqueado}</td>
+                        <td class="percentage" style="color: #a855f7;">${getPct(bloqueado)}</td>
+                    </tr>
+                    <tr>
+                        <td class="indicator">AGENDADO</td>
+                        <td class="value">${agendado}</td>
+                        <td class="percentage" style="color: #3b82f6;">${getPct(agendado)}</td>
+                    </tr>
+                    <tr>
+                        <td class="indicator">INDISPONÍVEL</td>
+                        <td class="value">${indisponivel}</td>
+                        <td class="percentage" style="color: #9ca3af;">${getPct(indisponivel)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
 
-    const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * FRENTES_SEQUENCIA.length)) * 100) : 0;
-    const pctVqA = totalUnits > 0 ? (vqAprovados / totalUnits * 100).toFixed(1) : "0.0";
-    const pctVqR = totalUnits > 0 ? (vqReprovados / totalUnits * 100).toFixed(1) : "0.0";
-    const pctVaA = totalUnits > 0 ? (vaAprovados / totalUnits * 100).toFixed(1) : "0.0";
-    const pctVaR = totalUnits > 0 ? (vaReprovados / totalUnits * 100).toFixed(1) : "0.0";
-    const pctA = totalUnits > 0 ? (ativas / totalUnits * 100).toFixed(1) : "0.0";
+function renderSummaryStats() {
+    const vaSummaryEl = document.getElementById('dashboard-va-summary');
+    const normalSummaryEl = document.querySelector('.dashboard-summary');
+    
+    if (activeFilterFront === 'VA') {
+        if (normalSummaryEl) normalSummaryEl.classList.add('hidden');
+        if (vaSummaryEl) {
+            vaSummaryEl.classList.remove('hidden');
+            
+            let html = `<div class="va-summary-container">`;
+            html += compileVaStatsForScope(projectState.units, "VISÃO GERAL OBRA", projectState.units.length);
+            projectState.towers.forEach(t => {
+                const towerUnits = projectState.units.filter(u => u.tower === t.name);
+                html += compileVaStatsForScope(towerUnits, `VISÃO GERAL ${t.name.toUpperCase()}`, projectState.units.length);
+            });
+            html += `</div>`;
+            
+            vaSummaryEl.innerHTML = html;
+        }
+    } else {
+        if (vaSummaryEl) vaSummaryEl.classList.add('hidden');
+        if (normalSummaryEl) normalSummaryEl.classList.remove('hidden');
+        
+        const totalUnits = projectState.units.length;
+        let vqAprovados = 0;
+        let vqReprovados = 0;
+        let vaAprovados = 0;
+        let vaReprovados = 0;
+        let ativas = 0;
+        let totalProgressSum = 0;
 
-    statVqAprovados.textContent = `${vqAprovados} (${pctVqA}%)`;
-    statVqReprovados.textContent = `${vqReprovados} (${pctVqR}%)`;
-    statVaAprovados.textContent = `${vaAprovados} (${pctVaA}%)`;
-    statVaReprovados.textContent = `${vaReprovados} (${pctVaR}%)`;
-    statAtivos.textContent = `${ativas} (${pctA}%)`;
-    statProgresso.textContent = `${percentGeral}%`;
+        projectState.units.forEach(u => {
+            totalProgressSum += u.activeFrontIndex;
+            
+            if (u.activeFrontIndex > 0 && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
+                ativas++;
+            }
+            
+            // VQ Checks: Reproved if there is any pending VQ reprova; Approved if VQ is completed and no pending VQ reprova
+            const hasVqPending = u.reprovas && u.reprovas.some(r => r.servico === 'VQ' && r.status === 'Pendente');
+            const isVqDone = u.frontsData && u.frontsData['VQ'] && u.frontsData['VQ'].concluido;
+            if (hasVqPending) {
+                vqReprovados++;
+            } else if (isVqDone) {
+                vqAprovados++;
+            }
+
+            // VA Checks: Reproved if there is any pending VA reprova; Approved if VA is completed and no pending VA reprova
+            const hasVaPending = u.reprovas && u.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
+            const isVaDone = u.frontsData && u.frontsData['VA'] && u.frontsData['VA'].concluido;
+            if (hasVaPending) {
+                vaReprovados++;
+            } else if (isVaDone) {
+                vaAprovados++;
+            }
+        });
+
+        const percentGeral = totalUnits > 0 ? Math.round((totalProgressSum / (totalUnits * FRENTES_SEQUENCIA.length)) * 100) : 0;
+        const pctVqA = totalUnits > 0 ? (vqAprovados / totalUnits * 100).toFixed(1) : "0.0";
+        const pctVqR = totalUnits > 0 ? (vqReprovados / totalUnits * 100).toFixed(1) : "0.0";
+        const pctVaA = totalUnits > 0 ? (vaAprovados / totalUnits * 100).toFixed(1) : "0.0";
+        const pctVaR = totalUnits > 0 ? (vaReprovados / totalUnits * 100).toFixed(1) : "0.0";
+        const pctA = totalUnits > 0 ? (ativas / totalUnits * 100).toFixed(1) : "0.0";
+
+        statVqAprovados.textContent = `${vqAprovados} (${pctVqA}%)`;
+        statVqReprovados.textContent = `${vqReprovados} (${pctVqR}%)`;
+        statVaAprovados.textContent = `${vaAprovados} (${pctVaA}%)`;
+        statVaReprovados.textContent = `${vaReprovados} (${pctVaR}%)`;
+        statAtivos.textContent = `${ativas} (${pctA}%)`;
+        statProgresso.textContent = `${percentGeral}%`;
+    }
 }
 
 function renderLegendFilters() {
@@ -1303,17 +1444,21 @@ function renderTowers() {
                             cellClass = 'bg-green';
                         }
                     } else if (activeFilterFront === 'VA') {
-                        const vaReprovas = matchedUnit.reprovas.some(r => r.servico === 'VA' && r.status === 'Pendente');
-                        if (vaReprovas) {
-                            cellClass = 'bg-red';
-                        } else {
-                            cellClass = 'bg-green';
-                        }
+                        const vaStatus = getUnitVAStatus(matchedUnit);
+                        cellClass = `va-${vaStatus.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}`;
                     }
                     
                     cell.classList.add(cellClass);
                     const displayText = matchedUnit.isHall ? 'H' : unitNum;
-                    cell.innerHTML = `<span class="unit-num">${displayText}</span>`;
+                    if (activeFilterFront === 'VA') {
+                        const vaStatus = getUnitVAStatus(matchedUnit);
+                        cell.innerHTML = `
+                            <span class="unit-num" style="font-size: 0.8rem; font-weight: 700; line-height: 1.1;">${displayText}</span>
+                            <span class="va-status-label">${vaStatus}</span>
+                        `;
+                    } else {
+                        cell.innerHTML = `<span class="unit-num">${displayText}</span>`;
+                    }
                     
                     // Add delay/out-of-order pulsing classes
                     const outOfOrder = isUnitOutOfOrder(matchedUnit);
@@ -1327,7 +1472,11 @@ function renderTowers() {
                         cell.classList.add('pulsing-purple');
                     }
                     
-                    cell.title = `${matchedUnit.tower} - ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Entrega dos Sonhos' : frontName}\nStatus: ${matchedUnit.status_geral}`;
+                    let statusGeralText = matchedUnit.status_geral;
+                    if (activeFilterFront === 'VA') {
+                        statusGeralText = getUnitVAStatus(matchedUnit);
+                    }
+                    cell.title = `${matchedUnit.tower} - ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Entrega dos Sonhos' : frontName}\nStatus: ${statusGeralText}`;
                     if (outOfOrder) cell.title += `\n⚠️ Fora de sequência!`;
                     if (delayed) cell.title += `\n⚠️ Prazo atrasado!`;
                     
@@ -2432,6 +2581,17 @@ function openUnitDetailsModal(unitId) {
         selector.value = "Concluido";
     } else {
         selector.value = FRENTES_SEQUENCIA[u.activeFrontIndex];
+    }
+    
+    // VA status selector handling
+    const vaStatusContainer = document.getElementById('modal-unit-va-status-container');
+    const vaSelector = document.getElementById('modal-unit-va-status-selector');
+    const isVqDone = u.frontsData && (u.frontsData['VQ']?.concluido || u.frontsData['VQ']?.concluido === true);
+    if (isVqDone) {
+        if (vaStatusContainer) vaStatusContainer.classList.remove('hidden');
+        if (vaSelector) vaSelector.value = u.status_va || "";
+    } else {
+        if (vaStatusContainer) vaStatusContainer.classList.add('hidden');
     }
     
     // Status Badge

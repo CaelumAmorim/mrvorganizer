@@ -369,6 +369,10 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Painel de Resumo VA (Vistoria de Entrega) -->
+                    <div class="dashboard-va-summary hidden" id="dashboard-va-summary" style="margin-bottom: 1.5rem;">
+                    </div>
 
                     <!-- Filtro do Mapa Geral (Frentes de serviço de interesse) -->
                     <div class="filter-panel card">
@@ -893,6 +897,22 @@
                                 </select>
                             </div>
                             <span id="modal-unit-status-badge" class="badge">Ativo</span>
+                        </div>
+
+                        <!-- Seletor de Status VA -->
+                        <div class="status-summary-box hidden" id="modal-unit-va-status-container" style="margin-top: 10px;">
+                            <span class="label">Status VA (Vistoria)</span>
+                            <div class="front-selector-wrapper">
+                                <select id="modal-unit-va-status-selector">
+                                    <option value="">Automático</option>
+                                    <option value="LIBERADO">LIBERADO</option>
+                                    <option value="AGENDADO">AGENDADO</option>
+                                    <option value="BLOQUEADO">BLOQUEADO</option>
+                                    <option value="INDISPONÍVEL">INDISPONÍVEL</option>
+                                    <option value="PERMUTANTE">PERMUTANTE</option>
+                                    <option value="REVISTORIA">REVISTORIA</option>
+                                </select>
+                            </div>
                         </div>
                         
                         <!-- Progresso da Unidade -->

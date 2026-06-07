@@ -110,6 +110,33 @@ app.get('/api/project', async (req, res) => {
     }
 });
 
+// Endpoint to reset PostgreSQL state from JSON file on disk
+app.get('/api/project/reset', async (req, res) => {
+    const projectName = req.query.name || 'chapada_fontana';
+    const dbPath = path.join(__dirname, `database_${projectName}.json`);
+    
+    if (fs.existsSync(dbPath)) {
+        try {
+            const data = fs.readFileSync(dbPath, 'utf8');
+            const projectState = JSON.parse(data);
+            
+            if (pgClient) {
+                await pgClient.query(
+                    'INSERT INTO projects (name, state) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET state = $2',
+                    [projectName, JSON.stringify(projectState)]
+                );
+                return res.json({ success: true, message: `Successfully reset PostgreSQL state for ${projectName} from disk.` });
+            } else {
+                return res.json({ success: true, message: `Running in local mode. File on disk is already updated.` });
+            }
+        } catch (e) {
+            return res.status(500).json({ error: "Failed to reset project database: " + e.message });
+        }
+    } else {
+        return res.status(404).json({ error: "Database file not found on disk." });
+    }
+});
+
 // API Endpoint to save project state
 app.post('/api/project', async (req, res) => {
     const projectName = req.query.name || 'chapada_fontana';
