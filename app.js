@@ -979,6 +979,13 @@ function loginSuccess(user) {
         userRoleIcon.className = 'fa fa-user';
     }
 
+    const canConfig = user.role === 'admin' || user.role === 'engenheiro' || user.role === 'gestor';
+    if (canConfig) {
+        document.querySelectorAll('.config-allowed').forEach(el => el.classList.remove('hidden'));
+    } else {
+        document.querySelectorAll('.config-allowed').forEach(el => el.classList.add('hidden'));
+    }
+
     const canManagePermissions = user.role === 'admin' || user.role === 'engenheiro' || user.role === 'gestor' || user.role === 'diretor';
     if (canManagePermissions) {
         document.querySelectorAll('.permissions-allowed').forEach(el => el.classList.remove('hidden'));
@@ -995,9 +1002,13 @@ function loginSuccess(user) {
 // Page Router
 function navigateToPage(pageId) {
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro');
+    const canConfig = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor');
     const canManagePermissions = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor' || currentUser.role === 'diretor');
 
-    if ((pageId === 'page-usuarios' || pageId === 'page-config') && !isPowerUser) {
+    if (pageId === 'page-usuarios' && !isPowerUser) {
+        pageId = 'page-mapa';
+    }
+    if (pageId === 'page-config' && !canConfig) {
         pageId = 'page-mapa';
     }
     if (pageId === 'page-permissoes' && !canManagePermissions) {
@@ -2036,6 +2047,11 @@ function addTowerConfigRow() {
 
 function handleConfigTowersSubmit(e) {
     e.preventDefault();
+    const canConfig = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor');
+    if (!canConfig) {
+        alert("Apenas o Engenheiro e o Gestor podem alterar a estrutura da obra.");
+        return;
+    }
     const rows = document.querySelectorAll('.config-tower-card');
     const newTowers = [];
     const newUnits = [];
@@ -2140,6 +2156,10 @@ function resetAllProjectData() {
 }
 
 async function restoreSplendoreSeed() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert("Apenas o Administrador pode restaurar os dados semente.");
+        return;
+    }
     if (confirm("Deseja realmente restaurar os dados originais importados da Planilha Splendore? Todos os novos lançamentos serão perdidos.")) {
         localStorage.removeItem('mrv_project_state');
         await loadSeedData();
