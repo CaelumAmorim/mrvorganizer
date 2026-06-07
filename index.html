@@ -423,6 +423,52 @@
                         </div>
                     </div>
 
+                    <!-- CARD: APROVAÇÃO EM LOTE -->
+                    <div class="frente-lote-config card hidden" id="frente-lote-container" style="margin-bottom: 1.5rem;">
+                        <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+                            <h2 style="font-size: 1.25rem;"><i class="fa fa-layer-group text-success"></i> Aprovação em Lote (Torre ou Lâmina)</h2>
+                        </div>
+                        <div class="card-body" style="padding-top: 0.75rem;">
+                            <form id="form-lote-approval" class="filter-row" style="align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+                                <div class="filter-group" style="flex: 1; min-width: 130px;">
+                                    <label for="lote-tower"><i class="fa fa-building text-success"></i> Torre</label>
+                                    <select id="lote-tower" class="input-glow" required>
+                                        <option value="">Selecione...</option>
+                                        <!-- Preenchido via JS -->
+                                    </select>
+                                </div>
+                                <div class="filter-group" style="flex: 1; min-width: 130px;">
+                                    <label for="lote-floor"><i class="fa fa-stairs text-success"></i> Lâmina (Andar)</label>
+                                    <select id="lote-floor" class="input-glow">
+                                        <option value="all">Toda a Torre</option>
+                                        <!-- Preenchido via JS -->
+                                    </select>
+                                </div>
+                                <div class="filter-group" style="flex: 1.5; min-width: 160px;">
+                                    <label for="lote-resp"><i class="fa fa-user-check text-success"></i> Responsável</label>
+                                    <input type="text" id="lote-resp" class="input-glow" placeholder="Ex: Equipe Splendore" required>
+                                </div>
+                                <div class="filter-group" style="flex: 1.2; min-width: 140px;">
+                                    <label for="lote-date"><i class="fa fa-calendar text-success"></i> Data Conclusão</label>
+                                    <input type="date" id="lote-date" class="input-glow" required>
+                                </div>
+                                <div class="filter-group" style="flex: 1.5; min-width: 160px;">
+                                    <label for="lote-material-nome"><i class="fa fa-box text-success"></i> Insumo (Opcional)</label>
+                                    <input type="text" id="lote-material-nome" class="input-glow" placeholder="Ex: Cerâmica 45x45">
+                                </div>
+                                <div class="filter-group" style="flex: 0.8; min-width: 80px;">
+                                    <label for="lote-material-qtd">Qtd</label>
+                                    <input type="number" id="lote-material-qtd" min="0" step="any" class="input-glow" placeholder="Ex: 10">
+                                </div>
+                                <div class="filter-group" style="flex: 1; min-width: 160px;">
+                                    <button type="submit" class="btn btn-primary" style="height: 38px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fa fa-check-double"></i> Aprovar em Lote
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                     <div class="frente-details card">
                         <div class="frente-info-header">
                             <div class="title-section">
@@ -712,6 +758,18 @@
                                 <i class="fa fa-square-check text-success"></i>
                                 <h3>Nenhuma reprova encontrada</h3>
                                 <p>Qualidade 100%! Nenhuma falha registrada com os filtros selecionados.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Reprovas Pagination Controls -->
+                        <div id="reprovas-pagination-container" class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 12px; background: rgba(255,255,255,0.02);">
+                            <div class="pagination-info" style="font-size: 0.85rem; color: var(--text-secondary);">
+                                Mostrando <strong id="rep-pag-start">0</strong> a <strong id="rep-pag-end">0</strong> de <strong id="rep-pag-total">0</strong> reprovas
+                            </div>
+                            <div class="pagination-controls" style="display: flex; align-items: center; gap: 8px;">
+                                <button id="btn-rep-pag-prev" class="btn btn-xs btn-outline" style="min-width: 80px;"><i class="fa fa-chevron-left"></i> Anterior</button>
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">Página <strong id="rep-pag-current">1</strong> de <strong id="rep-pag-total-pages">1</strong></span>
+                                <button id="btn-rep-pag-next" class="btn btn-xs btn-outline" style="min-width: 80px;">Próxima <i class="fa fa-chevron-right"></i></button>
                             </div>
                         </div>
                     </div>

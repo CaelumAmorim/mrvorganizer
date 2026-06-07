@@ -14,6 +14,8 @@ const API_URL = ''; // Relative path for serving from Node server
 let activeProjectName = sessionStorage.getItem('mrv_active_project_name') || null;
 let globalCollaborators = [];
 let activeModalMaterials = [];
+let currentReprovasPage = 1;
+const reprovasPageSize = 50;
 
 const FRENTES_SEQUENCIA = [
     "REGULARIZAÇÃO DE PAREDE (gesso/argamassa)",
@@ -687,10 +689,34 @@ function setupEventListeners() {
         btnSaveExcelRep.addEventListener('click', saveExcelReprovas);
     }
 
-    // Filter Reprovas table changes
-    document.getElementById('filter-rep-tower').addEventListener('change', renderReprovasPage);
-    document.getElementById('filter-rep-status').addEventListener('change', renderReprovasPage);
-    document.getElementById('filter-rep-search').addEventListener('input', renderReprovasPage);
+    // Filter Reprovas table changes (Reset to page 1 on filter change)
+    document.getElementById('filter-rep-tower').addEventListener('change', () => { currentReprovasPage = 1; renderReprovasPage(); });
+    document.getElementById('filter-rep-status').addEventListener('change', () => { currentReprovasPage = 1; renderReprovasPage(); });
+    document.getElementById('filter-rep-search').addEventListener('input', () => { currentReprovasPage = 1; renderReprovasPage(); });
+
+    // Pagination Listeners
+    const btnRepPagPrev = document.getElementById('btn-rep-pag-prev');
+    if (btnRepPagPrev) {
+        btnRepPagPrev.addEventListener('click', () => {
+            if (currentReprovasPage > 1) {
+                currentReprovasPage--;
+                renderReprovasPage();
+            }
+        });
+    }
+    const btnRepPagNext = document.getElementById('btn-rep-pag-next');
+    if (btnRepPagNext) {
+        btnRepPagNext.addEventListener('click', () => {
+            currentReprovasPage++;
+            renderReprovasPage();
+        });
+    }
+
+    // Form Approval in Batch (Lote)
+    const formLoteApproval = document.getElementById('form-lote-approval');
+    if (formLoteApproval) {
+        formLoteApproval.addEventListener('submit', handleBatchApprovalSubmit);
+    }
 
     // Export Reprovas
     document.getElementById('btn-export-reprovas').addEventListener('click', exportReprovasCSV);
@@ -705,7 +731,10 @@ function setupEventListeners() {
         input.addEventListener('input', renderInsumosPage);
     });
     document.querySelectorAll('.rep-col-filter-input').forEach(input => {
-        input.addEventListener('input', renderReprovasPage);
+        input.addEventListener('input', () => {
+            currentReprovasPage = 1;
+            renderReprovasPage();
+        });
     });
 
     // Export Insumos
@@ -1418,6 +1447,78 @@ function renderFrenteDetails() {
     // Atualizar contagem no cabeçalho (mostra quantas estão pendentes de conclusão no total)
     document.getElementById('active-frente-units-count').textContent = `${pendingUnits.length} Unidades Pendentes`;
 
+    // 2.5. Populate Batch Approval (Lote) interface and permissions
+    const loteTowerSelect = document.getElementById('lote-tower');
+    const loteFloorSelect = document.getElementById('lote-floor');
+    const loteContainer = document.getElementById('frente-lote-container');
+    const loteDateInput = document.getElementById('lote-date');
+
+    // Set today as default date for batch approval
+    if (loteDateInput && !loteDateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        loteDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    if (loteTowerSelect && loteContainer) {
+        const userRole = currentUser ? currentUser.role : 'fiscal';
+        const allowed = currentUser ? currentUser.allowedFronts : null;
+        const isFrontAllowed = !allowed || allowed.length === 0 || allowed.includes(activeFrente);
+        const canBatchApprove = (userRole === 'admin' || userRole === 'engenheiro' || userRole === 'gestor') && isFrontAllowed;
+
+        if (canBatchApprove && pendingUnits.length > 0) {
+            loteContainer.classList.remove('hidden');
+            
+            // Save current selection to restore after rendering
+            const currentSelectedTower = loteTowerSelect.value;
+            loteTowerSelect.innerHTML = '<option value="">Selecione a Torre...</option>';
+            projectState.towers.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.textContent = t.name;
+                if (t.name === currentSelectedTower) {
+                    opt.selected = true;
+                }
+                loteTowerSelect.appendChild(opt);
+            });
+
+            // Handle floor selection population based on selected tower
+            const updateFloorOptions = () => {
+                const selectedTowerName = loteTowerSelect.value;
+                const currentSelectedFloor = loteFloorSelect.value;
+                loteFloorSelect.innerHTML = '<option value="all">Toda a Torre</option>';
+                if (selectedTowerName) {
+                    const towerObj = projectState.towers.find(t => t.name === selectedTowerName);
+                    if (towerObj) {
+                        const totalFloors = towerObj.floors || 12;
+                        for (let f = 1; f <= totalFloors; f++) {
+                            const opt = document.createElement('option');
+                            opt.value = f;
+                            opt.textContent = `${f}º Pavimento`;
+                            if (f.toString() === currentSelectedFloor) {
+                                opt.selected = true;
+                            }
+                            loteFloorSelect.appendChild(opt);
+                        }
+                    }
+                }
+            };
+            
+            // Only bind change listener once
+            if (!loteTowerSelect.dataset.listenerBound) {
+                loteTowerSelect.addEventListener('change', updateFloorOptions);
+                loteTowerSelect.dataset.listenerBound = 'true';
+            }
+            
+            // Run it now
+            updateFloorOptions();
+        } else {
+            loteContainer.classList.add('hidden');
+        }
+    }
+
     // 3. Renderizar Painel de Projeções (Torres e Obra)
     const projectionsGrid = document.getElementById('frente-projections-grid');
     projectionsGrid.innerHTML = '';
@@ -1718,11 +1819,40 @@ function renderReprovasPage() {
         matchedReprovas = matchedReprovas.filter(m => m.reprova.status.toLowerCase().includes(colFilters.status));
     }
 
-    if (matchedReprovas.length === 0) {
+    const totalItems = matchedReprovas.length;
+    const totalPages = Math.ceil(totalItems / reprovasPageSize) || 1;
+    
+    if (currentReprovasPage > totalPages) {
+        currentReprovasPage = totalPages;
+    }
+    
+    // Update pagination DOM elements
+    document.getElementById('rep-pag-start').textContent = totalItems === 0 ? 0 : (currentReprovasPage - 1) * reprovasPageSize + 1;
+    document.getElementById('rep-pag-end').textContent = Math.min(currentReprovasPage * reprovasPageSize, totalItems);
+    document.getElementById('rep-pag-total').textContent = totalItems;
+    document.getElementById('rep-pag-current').textContent = currentReprovasPage;
+    document.getElementById('rep-pag-total-pages').textContent = totalPages;
+    
+    const btnPrev = document.getElementById('btn-rep-pag-prev');
+    const btnNext = document.getElementById('btn-rep-pag-next');
+    if (btnPrev) {
+        btnPrev.disabled = currentReprovasPage <= 1;
+        btnPrev.style.opacity = btnPrev.disabled ? '0.4' : '1';
+        btnPrev.style.pointerEvents = btnPrev.disabled ? 'none' : 'auto';
+    }
+    if (btnNext) {
+        btnNext.disabled = currentReprovasPage >= totalPages;
+        btnNext.style.opacity = btnNext.disabled ? '0.4' : '1';
+        btnNext.style.pointerEvents = btnNext.disabled ? 'none' : 'auto';
+    }
+
+    if (totalItems === 0) {
         emptyMsg.classList.remove('hidden');
+        document.getElementById('reprovas-pagination-container').style.display = 'none';
         return;
     }
     emptyMsg.classList.add('hidden');
+    document.getElementById('reprovas-pagination-container').style.display = 'flex';
 
     // Sort by status (Pendente first)
     matchedReprovas.sort((a, b) => {
@@ -1731,7 +1861,12 @@ function renderReprovasPage() {
         return 0;
     });
 
-    matchedReprovas.forEach(m => {
+    const paginatedReprovas = matchedReprovas.slice(
+        (currentReprovasPage - 1) * reprovasPageSize,
+        currentReprovasPage * reprovasPageSize
+    );
+
+    paginatedReprovas.forEach(m => {
         const r = m.reprova;
         const tr = document.createElement('tr');
 
@@ -2518,6 +2653,114 @@ function handleUpdateFrontSubmit(e) {
     } else if (activePage === 'page-mapa') {
         renderSummaryStats();
         renderTowers();
+    }
+}
+
+async function handleBatchApprovalSubmit(e) {
+    e.preventDefault();
+    
+    const tower = document.getElementById('lote-tower').value;
+    const floorStr = document.getElementById('lote-floor').value;
+    const responsavel = document.getElementById('lote-resp').value.trim();
+    const dataFinalVal = document.getElementById('lote-date').value;
+    const materialNome = document.getElementById('lote-material-nome').value.trim();
+    const materialQtd = parseFloat(document.getElementById('lote-material-qtd').value) || 0;
+
+    if (!tower) {
+        alert("Por favor, selecione uma Torre.");
+        return;
+    }
+    if (!responsavel) {
+        alert("Por favor, preencha o Responsável.");
+        return;
+    }
+    if (!dataFinalVal) {
+        alert("Por favor, selecione a Data de Conclusão.");
+        return;
+    }
+
+    const fIdx = FRENTES_SEQUENCIA.indexOf(activeFrente);
+    if (fIdx === -1) return;
+
+    // Filter units matching the criteria
+    let unitsToApprove = projectState.units.filter(u => {
+        // Must match tower
+        if (u.tower !== tower) return false;
+        // Must match floor (if not "all")
+        if (floorStr !== 'all' && u.floor.toString() !== floorStr) return false;
+        // Must be currently active on this front
+        const fData = u.frontsData[activeFrente] || {};
+        const isDone = fData.concluido;
+        const isActive = !isDone && u.activeFrontIndex === fIdx;
+        return isActive;
+    });
+
+    if (unitsToApprove.length === 0) {
+        alert("Nenhuma unidade pendente nesta frente de serviço atende aos filtros de lote selecionados.");
+        return;
+    }
+
+    const confirmMsg = `Deseja realmente aprovar em lote a frente "${activeFrente}" para as ${unitsToApprove.length} unidades pendentes na ${tower}${floorStr !== 'all' ? `, no ${floorStr}º Pavimento` : ''}?`;
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    const formattedDate = convertYMDToDMY(dataFinalVal);
+
+    // Prepare materials array if supplied
+    let batchMaterials = [];
+    if (materialNome && materialQtd > 0) {
+        batchMaterials.push({
+            material: materialNome,
+            quantidade: materialQtd,
+            tipo: "",
+            subtipo: "",
+            observacao: "Lançamento em lote",
+            data_lancamento: new Date().toLocaleDateString('pt-BR')
+        });
+    }
+
+    // Process approval
+    unitsToApprove.forEach(u => {
+        if (!u.frontsData[activeFrente]) {
+            u.frontsData[activeFrente] = {};
+        }
+        const fData = u.frontsData[activeFrente];
+        fData.responsavel = responsavel;
+        fData.dataFinal = formattedDate;
+        fData.concluido = true;
+        fData.duracaoProj = fData.duracaoProj || 1;
+        fData.duracaoReal = fData.duracaoReal || 1;
+        
+        if (batchMaterials.length > 0) {
+            fData.materials = JSON.parse(JSON.stringify(batchMaterials));
+        }
+
+        // Advance front index
+        u.activeFrontIndex++;
+
+        // Update status_geral
+        if (u.activeFrontIndex === FRENTES_SEQUENCIA.length) {
+            u.status_geral = 'Aprovado';
+        } else {
+            u.status_geral = 'Ativo';
+        }
+    });
+
+    // Save and refresh
+    await saveState();
+
+    // Reset optional material inputs in form
+    document.getElementById('lote-material-nome').value = "";
+    document.getElementById('lote-material-qtd').value = "";
+
+    // Show feedback
+    alert(`${unitsToApprove.length} unidades aprovadas com sucesso!`);
+
+    // Refresh UI
+    if (activePage === 'page-frentes') {
+        renderFrentesSubtabs();
+        renderFrenteDetails();
     }
 }
 
