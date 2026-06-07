@@ -695,6 +695,18 @@ function setupEventListeners() {
         btnSaveBulkRep.addEventListener('click', handleBulkReprovasSave);
     }
 
+    // Modal add reprova to bulk switch listener
+    const btnReprovaGoBulk = document.getElementById('btn-reprova-go-bulk');
+    if (btnReprovaGoBulk) {
+        btnReprovaGoBulk.addEventListener('click', () => {
+            const unitId = document.getElementById('rep-unit-id').value;
+            if (unitId) {
+                modalAddReprova.classList.add('hidden');
+                openUnitDetailsModal(unitId, 'modal-tab-reprovas', 'modal-rep-sub-excel');
+            }
+        });
+    }
+
     // Wizard navigation listeners
     const btnBulkPrev = document.getElementById('btn-bulk-prev');
     if (btnBulkPrev) {
@@ -1980,7 +1992,10 @@ function renderFrenteDetails() {
 
         let reprovaBtn = "";
         if (isActive && (activeFrente === 'VQ' || activeFrente === 'VA') && !isReadOnly && isFrontAllowed) {
-            reprovaBtn = `<button class="btn btn-xs btn-danger btn-unit-reprova" data-id="${u.id}" style="background-color: var(--status-reprovado); border-color: var(--status-reprovado); color: white;"><i class="fa fa-triangle-exclamation"></i> Reprova</button>`;
+            reprovaBtn = `
+                <button class="btn btn-xs btn-danger btn-unit-reprova" data-id="${u.id}" style="background-color: var(--status-reprovado); border-color: var(--status-reprovado); color: white;" title="Registrar Reprova Individual"><i class="fa fa-triangle-exclamation"></i> Reprova</button>
+                <button class="btn btn-xs btn-outline btn-unit-reprova-lote" data-id="${u.id}" style="color: var(--status-reprovado); border-color: var(--status-reprovado);" title="Inserir Dados em Lote"><i class="fa fa-layer-group"></i> Inserir em Lote</button>
+            `;
         }
 
         tr.innerHTML = `
@@ -2009,6 +2024,10 @@ function renderFrenteDetails() {
             tr.querySelector('.btn-unit-update').addEventListener('click', () => openUpdateFrontModal(u.id, activeFrente));
             if (activeFrente === 'VQ' || activeFrente === 'VA') {
                 tr.querySelector('.btn-unit-reprova').addEventListener('click', () => openAddReprovaModal(u.id));
+                const btnLote = tr.querySelector('.btn-unit-reprova-lote');
+                if (btnLote) {
+                    btnLote.addEventListener('click', () => openUnitDetailsModal(u.id, 'modal-tab-reprovas', 'modal-rep-sub-excel'));
+                }
             }
         }
 
@@ -2628,7 +2647,7 @@ async function restoreSplendoreSeed() {
 // MODALS METHODS & HANDLERS
 // -------------------------------------------------------------
 
-function openUnitDetailsModal(unitId) {
+function openUnitDetailsModal(unitId, openTabId = 'modal-tab-workflow', openSubTabId = null) {
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
 
@@ -2831,17 +2850,40 @@ function openUnitDetailsModal(unitId) {
         btnAddRep.classList.add('hidden');
     }
 
-    // Set active tab to Workflow by default
+    // Set active tab
     modal.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
     modal.querySelectorAll('.modal-tab-panel').forEach(p => p.classList.remove('active'));
-    modal.querySelector('[data-tab="modal-tab-workflow"]').classList.add('active');
-    modal.querySelector('#modal-tab-workflow').classList.add('active');
+
+    const tabBtn = modal.querySelector(`[data-tab="${openTabId}"]`);
+    const tabPanel = modal.querySelector(`#${openTabId}`);
+    if (tabBtn && tabPanel) {
+        tabBtn.classList.add('active');
+        tabPanel.classList.add('active');
+    } else {
+        modal.querySelector('[data-tab="modal-tab-workflow"]').classList.add('active');
+        modal.querySelector('#modal-tab-workflow').classList.add('active');
+    }
 
     // Also reset VQ/VA sub-tabs internally
-    const subListBtn = modal.querySelector('#modal-tab-reprovas [data-tab="modal-rep-sub-list"]');
-    if (subListBtn) subListBtn.classList.add('active');
-    const subListPanel = modal.querySelector('#modal-rep-sub-list');
-    if (subListPanel) subListPanel.classList.add('active');
+    modal.querySelectorAll('#modal-tab-reprovas .modal-tab-btn').forEach(b => b.classList.remove('active'));
+    modal.querySelectorAll('#modal-tab-reprovas .modal-tab-panel').forEach(p => p.classList.remove('active'));
+
+    const subTab = openSubTabId || 'modal-rep-sub-list';
+    const subListBtn = modal.querySelector(`#modal-tab-reprovas [data-tab="${subTab}"]`);
+    const subListPanel = modal.querySelector(`#${subTab}`);
+    if (subListBtn && subListPanel) {
+        subListBtn.classList.add('active');
+        subListPanel.classList.add('active');
+    } else {
+        const defaultSubBtn = modal.querySelector('#modal-tab-reprovas [data-tab="modal-rep-sub-list"]');
+        if (defaultSubBtn) defaultSubBtn.classList.add('active');
+        const defaultSubPanel = modal.querySelector('#modal-rep-sub-list');
+        if (defaultSubPanel) defaultSubPanel.classList.add('active');
+    }
+
+    if (subTab === 'modal-rep-sub-excel') {
+        updateBulkWizardStep(1);
+    }
 
     modal.classList.remove('hidden');
 }
