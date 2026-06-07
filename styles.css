@@ -71,6 +71,84 @@ body.light-theme {
     --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
 }
 
+/* Tema Verde Claro (Auxiliar e Analista) */
+body.theme-green-light {
+    --bg-primary: #e8f5e9;
+    --bg-secondary: #ffffff;
+    --bg-card: #f1f8f5;
+    --bg-card-hover: #c8e6c9;
+    --border-color: #a5d6a7;
+    
+    --text-primary: #1b5e20;
+    --text-secondary: #2e7d32;
+    --text-muted: #66bb6a;
+    
+    --primary-color: #2e7d32;
+    --primary-hover: #1b5e20;
+    --primary-glow: rgba(46, 125, 50, 0.2);
+    
+    --status-active: #2e7d32;
+    --status-aprovado: #1b5e20;
+    --status-reprovado: #d32f2f;
+    --status-permutante: #7b1fa2;
+    --status-bloqueado: #78909c;
+    --status-agendado: #f57c00;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Tema Preto Elegante (Engenheiro e Gestor) */
+body.theme-black-elegant {
+    --bg-primary: #050505;
+    --bg-secondary: #0f0f11;
+    --bg-card: #151518;
+    --bg-card-hover: #1f1f24;
+    --border-color: #2b2b30;
+    
+    --text-primary: #f3f3f3;
+    --text-secondary: #a0a0a5;
+    --text-muted: #6c6c72;
+    
+    --primary-color: #e5e5e5;
+    --primary-hover: #ffffff;
+    --primary-glow: rgba(255, 255, 255, 0.15);
+    
+    --status-active: #4a90e2;
+    --status-aprovado: #2ecc71;
+    --status-reprovado: #e74c3c;
+    --status-permutante: #9b59b6;
+    --status-bloqueado: #7f8c8d;
+    --status-agendado: #f39c12;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Tema Dourado Premium (Administrador e Diretor) */
+body.theme-gold-premium {
+    --bg-primary: #0f0d0a;
+    --bg-secondary: #16130f;
+    --bg-card: #221d17;
+    --bg-card-hover: #2e2820;
+    --border-color: #42382b;
+    
+    --text-primary: #faf6f0;
+    --text-secondary: #d4c5b3;
+    --text-muted: #9c8e7c;
+    
+    --primary-color: #d4af37;
+    --primary-hover: #f3e5ab;
+    --primary-glow: rgba(212, 175, 55, 0.25);
+    
+    --status-active: #4a90e2;
+    --status-aprovado: #d4af37;
+    --status-reprovado: #d9534f;
+    --status-permutante: #9b59b6;
+    --status-bloqueado: #7f8c8d;
+    --status-agendado: #f0ad4e;
+    
+    --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
+}
+
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);

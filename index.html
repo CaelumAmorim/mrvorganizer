@@ -476,72 +476,152 @@
 
                 <!-- PÁGINA: CONSUMO DE INSUMOS -->
                 <section id="page-insumos" class="page-section">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fa fa-boxes-stacked"></i> Consumo de Insumos por Unidade</h2>
-                            <div class="header-actions">
-                                <button id="btn-export-insumos" class="btn btn-sm btn-outline"><i class="fa fa-file-export"></i> Exportar CSV</button>
-                            </div>
-                        </div>
-                        <div class="card-filters">
-                            <div class="filter-row">
-                                <div class="filter-group">
-                                    <label for="filter-ins-tower">Torre</label>
-                                    <select id="filter-ins-tower">
-                                        <option value="all">Todas</option>
-                                        <option value="Torre 01">Torre 01</option>
-                                        <option value="Torre 02">Torre 02</option>
-                                        <option value="Torre 03">Torre 03</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="filter-ins-frente">Frente de Serviço</label>
-                                    <select id="filter-ins-frente">
-                                        <option value="all">Todas</option>
-                                        <option value="Janela">1. Janela</option>
-                                        <option value="Impermeabilização">2. Impermeabilização</option>
-                                        <option value="Drywall">3. Drywall</option>
-                                        <option value="Piso">4. Piso</option>
-                                        <option value="Rejunte">5. Rejunte</option>
-                                        <option value="Pintura">6. Pintura</option>
-                                        <option value="Limpeza">7. Limpeza</option>
-                                        <option value="Regularização">8. Regularização</option>
-                                        <option value="Piso Laminado">9. Piso Laminado</option>
-                                        <option value="Checklist">10. Checklist</option>
-                                        <option value="VQ">11. VQ</option>
-                                        <option value="VA">12. VA</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="filter-ins-search">Buscar Unidade / Material / Tipo / Obs</label>
-                                    <input type="text" id="filter-ins-search" placeholder="Ex: 1201, Munari, Porcelanato, refazer...">
+                    <!-- Abas de controle internas de Insumos -->
+                    <div class="modal-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); display: flex;">
+                        <button class="modal-tab-btn active" data-tab="ins-tab-list"><i class="fa fa-list"></i> Lançamento Individual</button>
+                        <button class="modal-tab-btn" data-tab="ins-tab-projection"><i class="fa fa-chart-line"></i> Relatório de Compras & Projeção</button>
+                        <button class="modal-tab-btn" data-tab="ins-tab-rework-avg"><i class="fa fa-calculator"></i> Estimativa de Retrabalho (Médias)</button>
+                    </div>
+
+                    <!-- Sub-Painel 1: Lançamento Individual (Tabela original com filtros) -->
+                    <div id="ins-tab-list" class="modal-tab-panel active">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fa fa-boxes-stacked"></i> Consumo de Insumos por Unidade</h2>
+                                <div class="header-actions">
+                                    <button id="btn-export-insumos" class="btn btn-sm btn-outline"><i class="fa fa-file-export"></i> Exportar CSV</button>
                                 </div>
                             </div>
+                            <div class="card-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label for="filter-ins-tower">Torre</label>
+                                        <select id="filter-ins-tower">
+                                            <option value="all">Todas</option>
+                                            <option value="Torre 01">Torre 01</option>
+                                            <option value="Torre 02">Torre 02</option>
+                                            <option value="Torre 03">Torre 03</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="filter-ins-frente">Frente de Serviço</label>
+                                        <select id="filter-ins-frente">
+                                            <option value="all">Todas</option>
+                                            <option value="Janela">1. Janela</option>
+                                            <option value="Impermeabilização">2. Impermeabilização</option>
+                                            <option value="Drywall">3. Drywall</option>
+                                            <option value="Piso">4. Piso</option>
+                                            <option value="Rejunte">5. Rejunte</option>
+                                            <option value="Pintura">6. Pintura</option>
+                                            <option value="Limpeza">7. Limpeza</option>
+                                            <option value="Regularização">8. Regularização</option>
+                                            <option value="Piso Laminado">9. Piso Laminado</option>
+                                            <option value="Checklist">10. Checklist</option>
+                                            <option value="VQ">11. VQ</option>
+                                            <option value="VA">12. VA</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="filter-ins-search">Buscar Unidade / Material / Tipo / Obs</label>
+                                        <input type="text" id="filter-ins-search" placeholder="Ex: 1201, Munari, Porcelanato, refazer...">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Torre</th>
+                                            <th>Unidade</th>
+                                            <th>Frente</th>
+                                            <th>Data Lançamento</th>
+                                            <th>Responsável</th>
+                                            <th>Material</th>
+                                            <th>Tipo</th>
+                                            <th>Subtipo</th>
+                                            <th>Qtd</th>
+                                            <th>Observação</th>
+                                        </tr>
+                                        <tr class="filter-header-row" style="background: rgba(0,0,0,0.1);">
+                                            <th><input type="text" id="col-filter-tower" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-unit" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-frente" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-data" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-resp" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-material" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-tipo" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-subtipo" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-qtd" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                            <th><input type="text" id="col-filter-obs" placeholder="Filtrar..." class="col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-insumos-body">
+                                        <!-- Inserido dinamicamente via JS -->
+                                    </tbody>
+                                </table>
+                                <div id="no-insumos-msg" class="empty-state hidden">
+                                    <i class="fa fa-box-open"></i>
+                                    <h3>Nenhum insumo lançado</h3>
+                                    <p>Não há lançamentos de materiais correspondentes aos filtros selecionados.</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Torre</th>
-                                        <th>Unidade</th>
-                                        <th>Frente</th>
-                                        <th>Data Lançamento</th>
-                                        <th>Responsável</th>
-                                        <th>Material</th>
-                                        <th>Tipo</th>
-                                        <th>Subtipo</th>
-                                        <th>Qtd</th>
-                                        <th>Observação</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-insumos-body">
-                                    <!-- Inserido dinamicamente via JS -->
-                                </tbody>
-                            </table>
-                            <div id="no-insumos-msg" class="empty-state hidden">
-                                <i class="fa fa-box-open"></i>
-                                <h3>Nenhum insumo lançado</h3>
-                                <p>Não há lançamentos de materiais correspondentes aos filtros selecionados.</p>
+                    </div>
+
+                    <!-- Sub-Painel 2: Relatório de Compras & Projeção -->
+                    <div id="ins-tab-projection" class="modal-tab-panel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fa fa-cart-shopping"></i> Relatório de Compras & Projeção de Materiais</h2>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Insumo / Material</th>
+                                            <th>Tipo / Subtipo</th>
+                                            <th>Já Utilizado (Executado)</th>
+                                            <th>Falta p/ Concluir 1ª Exec. (Projeção)</th>
+                                            <th>Rework/Retrabalho Pendente</th>
+                                            <th style="color: var(--status-agendado)">Total a Comprar (Falta + Rework)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-ins-projection-body">
+                                        <!-- Preenchido dinamicamente via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-Painel 3: Estimativa de Retrabalho (Médias) -->
+                    <div id="ins-tab-rework-avg" class="modal-tab-panel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fa fa-calculator"></i> Estimativa de Retrabalho (Cálculo de Médias)</h2>
+                            </div>
+                            <p class="section-desc" style="margin: 0.75rem 1rem;">
+                                Este painel estima o retrabalho futuro com base nas reprovas históricas das frentes concluídas.
+                            </p>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Frente de Serviço</th>
+                                            <th>Material associado</th>
+                                            <th>Aptos Concluídos</th>
+                                            <th>Aptos Reprovados</th>
+                                            <th>Taxa Reprova (%)</th>
+                                            <th>Consumo Médio Extra p/ Reprova</th>
+                                            <th>Aptos Restantes</th>
+                                            <th>Proj. Aptos a Reprovar</th>
+                                            <th style="color: var(--status-reprovado)">Proj. Consumo Extra (Retrabalho)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-ins-rework-avg-body">
+                                        <!-- Preenchido dinamicamente via JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -596,6 +676,18 @@
                                         <th>Status</th>
                                         <th>Ações</th>
                                     </tr>
+                                    <tr class="rep-filter-header-row" style="background: rgba(0,0,0,0.1);">
+                                        <th><input type="text" id="rep-col-filter-tower" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-unit" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-servico" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-local" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-desc" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-material" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-qtd" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-resp" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th><input type="text" id="rep-col-filter-status" placeholder="Filtrar..." class="rep-col-filter-input" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-primary); outline: none; border-radius: 4px;"></th>
+                                        <th></th>
+                                    </tr>
                                 </thead>
                                 <tbody id="table-reprovas-body">
                                     <!-- Inserido dinamicamente -->
@@ -625,6 +717,7 @@
                                         <th>Nome Completo</th>
                                         <th>Nome de Usuário (Login)</th>
                                         <th>Nível de Acesso</th>
+                                        <th>Senha</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -762,15 +855,57 @@
                             </div>
                         </div>
                         
-                        <!-- Conteúdo da Aba 2: Histórico de Reprovas -->
+                        <!-- Conteúdo da Aba 2: Histórico de Reprovas com Sub-abas -->
                         <div id="modal-tab-reprovas" class="modal-tab-panel">
-                            <div class="modal-reprovas-list" id="modal-unit-reprovas-root">
-                                <!-- Lista de reprovas da unidade -->
+                            <!-- Abas de controle internas de Reprovas -->
+                            <div class="modal-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); display: flex;">
+                                <button class="modal-tab-btn active" data-tab="modal-rep-sub-list">Histórico de Reprovas</button>
+                                <button class="modal-tab-btn" data-tab="modal-rep-sub-excel">Planilha de Lote (Estilo Excel)</button>
                             </div>
-                            <!-- Botão rápido para lançar reprova (se estiver em VQ ou VA) -->
-                            <button id="modal-btn-add-reprova" class="btn btn-outline btn-block mt-3 hidden">
-                                <i class="fa fa-bug"></i> Registrar Nova Falha / Reprova
-                            </button>
+                            
+                            <!-- Sub-Painel 1: Lista do histórico original -->
+                            <div id="modal-rep-sub-list" class="modal-tab-panel active">
+                                <div class="modal-reprovas-list" id="modal-unit-reprovas-root" style="max-height: 250px; overflow-y: auto;">
+                                    <!-- Lista de reprovas da unidade -->
+                                </div>
+                                <button id="modal-btn-add-reprova" class="btn btn-outline btn-block mt-3 hidden">
+                                    <i class="fa fa-bug"></i> Registrar Nova Falha / Reprova
+                                </button>
+                            </div>
+                            
+                            <!-- Sub-Painel 2: Planilha de Lançamento Excel -->
+                            <div id="modal-rep-sub-excel" class="modal-tab-panel">
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-style: italic;">
+                                    Preencha cada linha abaixo para cadastrar falhas em lote para este apartamento. Deixe em branco as linhas que não for usar.
+                                </p>
+                                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                    <table class="data-table" style="width: 100%; min-width: 800px; font-size: 0.8rem;">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 130px;">Local/Cômodo</th>
+                                                <th>Descrição da Falha</th>
+                                                <th style="width: 120px;">Material</th>
+                                                <th style="width: 100px;">Tipo</th>
+                                                <th style="width: 100px;">Subtipo</th>
+                                                <th style="width: 70px;">Qtd</th>
+                                                <th style="width: 110px;">Responsável</th>
+                                                <th style="width: 40px; text-align: center;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="modal-rep-excel-body">
+                                            <!-- Linhas inseridas dinamicamente via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <button type="button" id="btn-modal-rep-excel-add-row" class="btn btn-xs btn-outline" style="border-color: var(--primary-color); color: var(--primary-color); padding: 4px 10px;">
+                                        <i class="fa fa-plus"></i> Adicionar Linha
+                                    </button>
+                                    <button type="button" id="btn-modal-rep-excel-save" class="btn btn-sm btn-danger" style="padding: 6px 12px;">
+                                        <i class="fa fa-floppy-disk"></i> Salvar Lançamento em Lote
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -817,40 +952,59 @@
 
                     <!-- Campos de Materiais Unificados para Lançamento -->
                     <div class="dynamic-materials-box">
-                        <h4>Insumos Utilizados nesta Unidade</h4>
-                        <div class="form-row">
-                            <div class="form-group col-7">
-                                <label for="update-mat-nome">Material / Insumo</label>
-                                <input type="text" id="update-mat-nome" list="material-suggestions" placeholder="Ex: Piso, Tinta, Drywall">
-                                <datalist id="material-suggestions">
-                                    <option value="Piso">
-                                    <option value="Rejunte">
-                                    <option value="Pintura">
-                                    <option value="Impermeabilização">
-                                    <option value="Regularização">
-                                    <option value="Piso Laminado">
-                                    <option value="Janela">
-                                    <option value="Drywall">
-                                </datalist>
-                            </div>
-                            <div class="form-group col-5">
-                                <label for="update-mat-qtd">Quantidade</label>
-                                <input type="text" id="update-mat-qtd" placeholder="Ex: 24 caixas, 10m">
-                            </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0;">Insumos Utilizados nesta Unidade</h4>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group col">
-                                <label for="update-mat-tipo">Tipo de Material</label>
-                                <input type="text" id="update-mat-tipo" placeholder="Ex: Porcelanato, Suvinil Fosco">
-                            </div>
-                            <div class="form-group col">
-                                <label for="update-mat-subtipo">Subtipo / Formato</label>
-                                <input type="text" id="update-mat-subtipo" placeholder="Ex: Munari Marfim, 60x60">
-                            </div>
+                        
+                        <!-- Container para a lista de materiais já adicionados -->
+                        <div id="added-materials-list" style="margin-bottom: 1rem; border: 1px dashed var(--border-color); border-radius: var(--border-radius); padding: 0.5rem; min-height: 45px; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.1); align-items: center;">
+                            <!-- Preenchido dinamicamente (tags de materiais) -->
                         </div>
-                        <div class="form-group">
-                            <label for="update-mat-obs">Observação / Comentários</label>
-                            <textarea id="update-mat-obs" rows="2" placeholder="Ex: Tivemos que refazer os apartamentos. Cozinha revestida."></textarea>
+
+                        <!-- Campos para adicionar novo material -->
+                        <div class="add-material-row" style="background: rgba(0,0,0,0.15); padding: 0.75rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+                            <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">Adicionar Insumo (+)</h5>
+                            <div class="form-row">
+                                <div class="form-group col-7" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem;">Material / Insumo</label>
+                                    <input type="text" id="add-mat-nome" list="material-suggestions" placeholder="Ex: Piso, Argamassa" style="padding: 0.5rem 0.75rem;">
+                                    <datalist id="material-suggestions">
+                                        <option value="Piso">
+                                        <option value="Rejunte">
+                                        <option value="Pintura">
+                                        <option value="Impermeabilização">
+                                        <option value="Regularização">
+                                        <option value="Piso Laminado">
+                                        <option value="Janela">
+                                        <option value="Drywall">
+                                        <option value="Argamassa">
+                                        <option value="Espaçador">
+                                    </datalist>
+                                </div>
+                                <div class="form-group col-5" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem;">Quantidade</label>
+                                    <input type="text" id="add-mat-qtd" placeholder="Ex: 5 sacos" style="padding: 0.5rem 0.75rem;">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem;">Tipo</label>
+                                    <input type="text" id="add-mat-tipo" placeholder="Ex: AC3" style="padding: 0.5rem 0.75rem;">
+                                </div>
+                                <div class="form-group col" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.75rem;">Subtipo / Formato</label>
+                                    <input type="text" id="add-mat-subtipo" placeholder="Ex: Cinza" style="padding: 0.5rem 0.75rem;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0.5rem;">
+                                <label style="font-size: 0.75rem;">Observação / Comentários</label>
+                                <input type="text" id="add-mat-obs" placeholder="Ex: Banheiro Suite" style="padding: 0.5rem 0.75rem;">
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="button" id="btn-add-material-item" class="btn btn-sm btn-outline" style="display: flex; align-items: center; gap: 4px; border-color: var(--primary-color); color: var(--primary-color); padding: 4px 10px; font-size: 0.8rem;">
+                                    <i class="fa fa-plus"></i> Inserir Material
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -966,7 +1120,10 @@
 
                     <div class="form-group">
                         <label for="user-password">Senha</label>
-                        <input type="password" id="user-password" placeholder="Mínimo 4 caracteres" required autocomplete="new-password">
+                        <div class="password-wrapper">
+                            <input type="password" id="user-password" placeholder="Mínimo 4 caracteres" required autocomplete="new-password">
+                            <button type="button" id="toggle-user-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -975,7 +1132,7 @@
                             <option value="fiscal">Auxiliar de Engenharia</option>
                             <option value="analista">Analista de Engenharia</option>
                             <option value="controle">Controle de Obra</option>
-                            <option value="gestor">Gestor</option>
+                            <option value="gestor">Gestor (a)</option>
                             <option value="diretor">Diretor (Visualização)</option>
                             <option value="engenheiro">Engenheiro</option>
                             <option value="admin">Administrador</option>

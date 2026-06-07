@@ -13,6 +13,7 @@ let syncMode = 'local'; // 'local' or 'api'
 const API_URL = ''; // Relative path for serving from Node server
 let activeProjectName = sessionStorage.getItem('mrv_active_project_name') || null;
 let globalCollaborators = [];
+let activeModalMaterials = [];
 
 const FRENTES_SEQUENCIA = [
     "Janela", 
@@ -286,6 +287,21 @@ function setupEventListeners() {
         }
     });
 
+    // User Modal Password view toggle
+    const toggleUserPasswordBtn = document.getElementById('toggle-user-password');
+    const userPasswordInput = document.getElementById('user-password');
+    if (toggleUserPasswordBtn && userPasswordInput) {
+        toggleUserPasswordBtn.addEventListener('click', () => {
+            if (userPasswordInput.type === 'password') {
+                userPasswordInput.type = 'text';
+                toggleUserPasswordBtn.querySelector('i').className = 'fa fa-eye-slash';
+            } else {
+                userPasswordInput.type = 'password';
+                toggleUserPasswordBtn.querySelector('i').className = 'fa fa-eye';
+            }
+        });
+    }
+
     // Login Form Submit
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -309,6 +325,9 @@ function setupEventListeners() {
         activeProjectName = null;
         sessionStorage.removeItem('mrv_current_user');
         sessionStorage.removeItem('mrv_active_project_name');
+        
+        // Reset role theme
+        document.body.classList.remove('theme-green-light', 'theme-black-elegant', 'theme-gold-premium');
         
         // Hide app and login, show project selector
         appContainer.classList.add('hidden');
@@ -363,8 +382,55 @@ function setupEventListeners() {
     // Form Update Front
     document.getElementById('form-update-front').addEventListener('submit', handleUpdateFrontSubmit);
 
+    // Dynamic Material Add
+    const btnAddMatItem = document.getElementById('btn-add-material-item');
+    if (btnAddMatItem) {
+        btnAddMatItem.addEventListener('click', () => {
+            const nomeInput = document.getElementById('add-mat-nome');
+            const qtdInput = document.getElementById('add-mat-qtd');
+            const tipoInput = document.getElementById('add-mat-tipo');
+            const subtipoInput = document.getElementById('add-mat-subtipo');
+            const obsInput = document.getElementById('add-mat-obs');
+            
+            const nome = nomeInput.value.trim();
+            const qtd = qtdInput.value.trim();
+            
+            if (!nome || !qtd) {
+                alert("Por favor, preencha o nome do material e a quantidade.");
+                return;
+            }
+            
+            activeModalMaterials.push({
+                material: nome,
+                quantidade: qtd,
+                tipo: tipoInput.value.trim(),
+                subtipo: subtipoInput.value.trim(),
+                observacao: obsInput.value.trim(),
+                data_lancamento: new Date().toLocaleDateString('pt-BR')
+            });
+            
+            nomeInput.value = "";
+            qtdInput.value = "";
+            tipoInput.value = "";
+            subtipoInput.value = "";
+            obsInput.value = "";
+            
+            renderActiveModalMaterials();
+        });
+    }
+
     // Form Add Reprova
     document.getElementById('form-add-reprova').addEventListener('submit', handleAddReprovaSubmit);
+
+    // VQ/VA batch reprova spreadsheet listeners
+    const btnAddExcelRow = document.getElementById('btn-modal-rep-excel-add-row');
+    if (btnAddExcelRow) {
+        btnAddExcelRow.addEventListener('click', () => addExcelReprovaRow());
+    }
+    const btnSaveExcelRep = document.getElementById('btn-modal-rep-excel-save');
+    if (btnSaveExcelRep) {
+        btnSaveExcelRep.addEventListener('click', saveExcelReprovas);
+    }
 
     // Filter Reprovas table changes
     document.getElementById('filter-rep-tower').addEventListener('change', renderReprovasPage);
@@ -378,6 +444,14 @@ function setupEventListeners() {
     document.getElementById('filter-ins-tower').addEventListener('change', renderInsumosPage);
     document.getElementById('filter-ins-frente').addEventListener('change', renderInsumosPage);
     document.getElementById('filter-ins-search').addEventListener('input', renderInsumosPage);
+
+    // Column filter input changes
+    document.querySelectorAll('.col-filter-input').forEach(input => {
+        input.addEventListener('input', renderInsumosPage);
+    });
+    document.querySelectorAll('.rep-col-filter-input').forEach(input => {
+        input.addEventListener('input', renderReprovasPage);
+    });
 
     // Export Insumos
     document.getElementById('btn-export-insumos').addEventListener('click', exportInsumosCSV);
@@ -544,7 +618,7 @@ function getRoleLabel(role) {
     const labels = {
         'admin': 'Administrador',
         'engenheiro': 'Engenheiro',
-        'gestor': 'Gestor',
+        'gestor': 'Gestor (a)',
         'controle': 'Controle de Obra',
         'diretor': 'Diretor',
         'analista': 'Analista de Engenharia',
@@ -553,15 +627,36 @@ function getRoleLabel(role) {
     return labels[role] || role;
 }
 
+function applyRoleTheme(role) {
+    document.body.classList.remove('theme-green-light', 'theme-black-elegant', 'theme-gold-premium');
+    if (role === 'fiscal' || role === 'analista') {
+        document.body.classList.add('theme-green-light');
+    } else if (role === 'engenheiro' || role === 'gestor') {
+        document.body.classList.add('theme-black-elegant');
+    } else if (role === 'admin' || role === 'diretor') {
+        document.body.classList.add('theme-gold-premium');
+    }
+}
+
 function loginSuccess(user) {
     currentUser = user;
     sessionStorage.setItem('mrv_current_user', JSON.stringify(currentUser));
+    
+    applyRoleTheme(user.role);
     
     loginContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
 
     userDisplayName.textContent = user.name;
     userDisplayRole.textContent = getRoleLabel(user.role);
+
+    // Update sidebar logo with the active project name next to logo
+    const logoTitle = document.querySelector('.logo-title-green');
+    if (logoTitle && projectState) {
+        let displayProjectName = projectState.name || 'MRV Organizer';
+        displayProjectName = displayProjectName.replace('MRV - ', '');
+        logoTitle.innerHTML = `mrv<span style="color: #f58521; font-weight: 700; text-transform: capitalize;"> - ${displayProjectName}</span>`;
+    }
     
     if (user.role === 'admin' || user.role === 'engenheiro') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
@@ -734,10 +829,30 @@ function renderTowers() {
         const block = document.createElement('div');
         block.className = 'tower-block';
         
+        let completionText = "";
+        if (activeFilterFront) {
+            if (activeFilterFront === 'Concluido') {
+                const dateStr = getTowerOverallCompletionDate(tConfig.name);
+                completionText = `Conclusão Geral: ${dateStr}`;
+            } else {
+                const proj = getProjectionsForService(activeFilterFront);
+                const dateStr = proj.towerProjections[tConfig.name] || "-";
+                completionText = `Conclusão ${activeFilterFront}: ${dateStr}`;
+            }
+        } else {
+            const dateStr = getTowerOverallCompletionDate(tConfig.name);
+            completionText = `Conclusão final da torre: ${dateStr}`;
+        }
+        
         block.innerHTML = `
-            <div class="tower-title-bar">
-                <h2>${tConfig.name}</h2>
-                <span class="badge">${tConfig.floors} Pav. / ${tConfig.unitsPerFloor} Aptos</span>
+            <div class="tower-title-bar" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h2 style="margin: 0;">${tConfig.name}</h2>
+                    <span class="badge" style="font-size: 0.75rem;">${tConfig.floors} Pav. / ${tConfig.unitsPerFloor} Aptos</span>
+                </div>
+                <div class="tower-completion-badge" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
+                    ${completionText}
+                </div>
             </div>
             <div class="tower-grid" id="grid-${tConfig.name.replace(/\s+/g, '-')}">
             </div>
@@ -1111,11 +1226,14 @@ function renderFrenteDetails() {
 
         // Material info
         let materialsText = '<span class="text-muted">Sem insumos</span>';
-        if (fData.materials && fData.materials.material) {
-            materialsText = `
-                <div><strong>${fData.materials.material}</strong> (${fData.materials.quantidade})</div>
-                <div class="text-muted" style="font-size: 0.75rem;">${fData.materials.tipo || ''} - ${fData.materials.subtipo || ''}</div>
-            `;
+        const mats = getMaterialsList(fData);
+        if (mats.length > 0) {
+            materialsText = mats.map(m => `
+                <div style="margin-bottom: 4px;">
+                    <strong>${m.material}</strong> (${m.quantidade})
+                    ${(m.tipo || m.subtipo) ? `<span class="text-muted" style="font-size: 0.75rem; margin-left: 4px;">(${m.tipo || ''}${m.tipo && m.subtipo ? '/' : ''}${m.subtipo || ''})</span>` : ''}
+                </div>
+            `).join('');
         }
 
         // Ações condicionais
@@ -1214,6 +1332,47 @@ function renderReprovasPage() {
             (m.reprova.material && m.reprova.material.toLowerCase().includes(searchQuery)) ||
             (m.reprova.responsavel && m.reprova.responsavel.toLowerCase().includes(searchQuery))
         );
+    }
+
+    // Apply column-level filters
+    const colFilters = {
+        tower: (document.getElementById('rep-col-filter-tower')?.value || '').toLowerCase().trim(),
+        unit: (document.getElementById('rep-col-filter-unit')?.value || '').toLowerCase().trim(),
+        servico: (document.getElementById('rep-col-filter-servico')?.value || '').toLowerCase().trim(),
+        local: (document.getElementById('rep-col-filter-local')?.value || '').toLowerCase().trim(),
+        desc: (document.getElementById('rep-col-filter-desc')?.value || '').toLowerCase().trim(),
+        material: (document.getElementById('rep-col-filter-material')?.value || '').toLowerCase().trim(),
+        qtd: (document.getElementById('rep-col-filter-qtd')?.value || '').toLowerCase().trim(),
+        resp: (document.getElementById('rep-col-filter-resp')?.value || '').toLowerCase().trim(),
+        status: (document.getElementById('rep-col-filter-status')?.value || '').toLowerCase().trim()
+    };
+
+    if (colFilters.tower) {
+        matchedReprovas = matchedReprovas.filter(m => m.tower.toLowerCase().includes(colFilters.tower));
+    }
+    if (colFilters.unit) {
+        matchedReprovas = matchedReprovas.filter(m => m.unit.toLowerCase().includes(colFilters.unit));
+    }
+    if (colFilters.servico) {
+        matchedReprovas = matchedReprovas.filter(m => m.reprova.servico.toLowerCase().includes(colFilters.servico));
+    }
+    if (colFilters.local) {
+        matchedReprovas = matchedReprovas.filter(m => m.reprova.local.toLowerCase().includes(colFilters.local));
+    }
+    if (colFilters.desc) {
+        matchedReprovas = matchedReprovas.filter(m => m.reprova.descricao.toLowerCase().includes(colFilters.desc));
+    }
+    if (colFilters.material) {
+        matchedReprovas = matchedReprovas.filter(m => (m.reprova.material || '').toLowerCase().includes(colFilters.material));
+    }
+    if (colFilters.qtd) {
+        matchedReprovas = matchedReprovas.filter(m => (m.reprova.quantidade_material || '').toLowerCase().includes(colFilters.qtd));
+    }
+    if (colFilters.resp) {
+        matchedReprovas = matchedReprovas.filter(m => (m.reprova.responsavel || '').toLowerCase().includes(colFilters.resp));
+    }
+    if (colFilters.status) {
+        matchedReprovas = matchedReprovas.filter(m => m.reprova.status.toLowerCase().includes(colFilters.status));
     }
 
     if (matchedReprovas.length === 0) {
@@ -1358,6 +1517,12 @@ function renderUsersList() {
             <td><code>${u.username}</code></td>
             <td><span class="badge ${badgeClass}">${getRoleLabel(u.role)}</span></td>
             <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="user-pwd-text" style="-webkit-text-security: disc;">${u.password}</span>
+                    <button class="btn btn-xs btn-outline btn-toggle-show-pwd" style="border: none; padding: 2px 6px; background: none; cursor: pointer;"><i class="fa fa-eye"></i></button>
+                </div>
+            </td>
+            <td>
                 ${u.username === 'rafael.samorim' ? '<span class="text-muted">Sistema</span>' : `
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-xs btn-outline btn-edit-user" data-username="${u.username}"><i class="fa fa-pen"></i></button>
@@ -1366,6 +1531,21 @@ function renderUsersList() {
                 `}
             </td>
         `;
+
+        const btnToggleShowPwd = tr.querySelector('.btn-toggle-show-pwd');
+        if (btnToggleShowPwd) {
+            btnToggleShowPwd.addEventListener('click', () => {
+                const pwdSpan = tr.querySelector('.user-pwd-text');
+                const icon = btnToggleShowPwd.querySelector('i');
+                if (pwdSpan.style.webkitTextSecurity === 'none') {
+                    pwdSpan.style.webkitTextSecurity = 'disc';
+                    icon.className = 'fa fa-eye';
+                } else {
+                    pwdSpan.style.webkitTextSecurity = 'none';
+                    icon.className = 'fa fa-eye-slash';
+                }
+            });
+        }
 
         const btnEdit = tr.querySelector('.btn-edit-user');
         if (btnEdit) {
@@ -1379,6 +1559,10 @@ function renderUsersList() {
                     document.getElementById('user-fullname').value = targetUser.name;
                     document.getElementById('user-password').value = targetUser.password;
                     document.getElementById('user-role').value = targetUser.role;
+                    // Reset modal eye icon to normal password mode
+                    document.getElementById('user-password').type = 'password';
+                    const toggleBtn = document.getElementById('toggle-user-password');
+                    if (toggleBtn) toggleBtn.querySelector('i').className = 'fa fa-eye';
                     modalAddUser.classList.remove('hidden');
                 }
             });
@@ -1394,7 +1578,6 @@ function renderUsersList() {
                 }
             });
         }
-
         tbody.appendChild(tr);
     });
 }
@@ -1571,8 +1754,18 @@ function handleConfigTowersSubmit(e) {
 }
 
 function resetAllProjectData() {
-    if (confirm("ATENÇÃO: Isso apagará TODOS os avanços, materiais e reprovas cadastrados. Você quer zerar toda a obra?")) {
-        // Reset every unit to index 0, clean histories
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert("Apenas o Administrador pode reiniciar a obra.");
+        return;
+    }
+    const senhaDigitada = prompt("ATENÇÃO: Esta ação é irreversível e apagará TODOS os avanços, materiais e reprovas. Para confirmar, digite sua senha de administrador:");
+    if (senhaDigitada === null) return;
+    if (senhaDigitada !== currentUser.password) {
+        alert("Senha incorreta. Operação cancelada.");
+        return;
+    }
+
+    // Reset every unit to index 0, clean histories
         projectState.units.forEach(u => {
             u.status_geral = "Ativo";
             u.activeFrontIndex = 0;
@@ -1600,7 +1793,6 @@ function resetAllProjectData() {
         saveState();
         alert("A obra foi completamente reiniciada!");
         navigateToPage('page-mapa');
-    }
 }
 
 async function restoreSplendoreSeed() {
@@ -1690,13 +1882,20 @@ function openUnitDetailsModal(unitId) {
         
         // Materials details
         let matText = "";
-        if (fData.concluido && fData.materials && fData.materials.quantidade > 0) {
-            matText = `
-                <div class="timeline-mats">
-                    <strong>Insumo:</strong> ${fData.materials.material} (${fData.materials.quantidade}) - ${fData.materials.tipo || ''} ${fData.materials.subtipo || ''}
-                    ${fData.materials.observacao ? `<div style="font-style: italic; font-size: 0.75rem; margin-top: 2px;">Obs: ${fData.materials.observacao}</div>` : ''}
-                </div>
-            `;
+        if (fData.concluido) {
+            const mats = getMaterialsList(fData);
+            if (mats.length > 0) {
+                matText = `<div class="timeline-mats" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 4px;">`;
+                mats.forEach(m => {
+                    matText += `
+                        <div style="margin-bottom: 4px; font-size: 0.8rem;">
+                            <strong>Insumo:</strong> ${m.material} (${m.quantidade})${m.tipo ? ` - ${m.tipo}` : ''} ${m.subtipo ? ` (${m.subtipo})` : ''}
+                            ${m.observacao ? `<div style="font-style: italic; font-size: 0.72rem; color: var(--text-secondary); margin-top: 1px;">Obs: ${m.observacao}</div>` : ''}
+                        </div>
+                    `;
+                });
+                matText += `</div>`;
+            }
         }
 
         item.innerHTML = `
@@ -1746,6 +1945,15 @@ function openUnitDetailsModal(unitId) {
         });
     }
 
+    // Initialize VQ/VA batch reprova excel spreadsheet
+    const excelBody = document.getElementById('modal-rep-excel-body');
+    if (excelBody) {
+        excelBody.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            addExcelReprovaRow();
+        }
+    }
+
     // Show Add Reprova button if unit is in VQ or VA step
     const btnAddRep = document.getElementById('modal-btn-add-reprova');
     if ((u.activeFrontIndex === 10 || u.activeFrontIndex === 11) && u.activeFrontIndex < 12) {
@@ -1759,6 +1967,12 @@ function openUnitDetailsModal(unitId) {
     modal.querySelectorAll('.modal-tab-panel').forEach(p => p.classList.remove('active'));
     modal.querySelector('[data-tab="modal-tab-workflow"]').classList.add('active');
     modal.querySelector('#modal-tab-workflow').classList.add('active');
+
+    // Also reset VQ/VA sub-tabs internally
+    const subListBtn = modal.querySelector('#modal-tab-reprovas [data-tab="modal-rep-sub-list"]');
+    if (subListBtn) subListBtn.classList.add('active');
+    const subListPanel = modal.querySelector('#modal-rep-sub-list');
+    if (subListPanel) subListPanel.classList.add('active');
 
     modal.classList.remove('hidden');
 }
@@ -1785,6 +1999,53 @@ function convertYMDToDMY(ymd) {
         return `${d}/${m}/${y}`;
     }
     return "";
+}
+
+function getMaterialsList(fData) {
+    if (!fData || !fData.materials) return [];
+    if (Array.isArray(fData.materials)) {
+        return fData.materials;
+    }
+    if (fData.materials.material) {
+        return [fData.materials];
+    }
+    return [];
+}
+
+function renderActiveModalMaterials() {
+    const container = document.getElementById('added-materials-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (activeModalMaterials.length === 0) {
+        container.innerHTML = `<span style="font-style: italic; color: var(--text-muted); font-size: 0.8rem;">Nenhum insumo adicionado ainda.</span>`;
+        return;
+    }
+    
+    activeModalMaterials.forEach((m, idx) => {
+        const tag = document.createElement('div');
+        tag.className = 'material-tag';
+        tag.style.display = 'flex';
+        tag.style.alignItems = 'center';
+        tag.style.gap = '6px';
+        tag.style.background = 'var(--bg-secondary)';
+        tag.style.border = '1px solid var(--border-color)';
+        tag.style.borderRadius = '6px';
+        tag.style.padding = '4px 8px';
+        tag.style.fontSize = '0.8rem';
+        
+        tag.innerHTML = `
+            <span><strong>${m.material}</strong> (${m.quantidade})${m.tipo ? ` - ${m.tipo}` : ''}</span>
+            <button type="button" class="btn-remove-mat" style="background: none; border: none; color: var(--status-reprovado); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px;"><i class="fa fa-xmark" style="font-size: 0.75rem;"></i></button>
+        `;
+        
+        tag.querySelector('.btn-remove-mat').addEventListener('click', () => {
+            activeModalMaterials.splice(idx, 1);
+            renderActiveModalMaterials();
+        });
+        
+        container.appendChild(tag);
+    });
 }
 
 function openUpdateFrontModal(unitId, frenteName) {
@@ -1826,13 +2087,16 @@ function openUpdateFrontModal(unitId, frenteName) {
     }
     document.getElementById('update-data-final').value = dataFinalVal;
 
-    // Load material defaults if exists
-    const m = fData.materials || {};
-    document.getElementById('update-mat-nome').value = m.material || "";
-    document.getElementById('update-mat-qtd').value = m.quantidade || "";
-    document.getElementById('update-mat-tipo').value = m.tipo || "";
-    document.getElementById('update-mat-subtipo').value = m.subtipo || "";
-    document.getElementById('update-mat-obs').value = m.observacao || "";
+    // Load materials into array state and render
+    activeModalMaterials = getMaterialsList(fData);
+    renderActiveModalMaterials();
+
+    // Clear add material input fields
+    document.getElementById('add-mat-nome').value = "";
+    document.getElementById('add-mat-qtd').value = "";
+    document.getElementById('add-mat-tipo').value = "";
+    document.getElementById('add-mat-subtipo').value = "";
+    document.getElementById('add-mat-obs').value = "";
 
     modalUpdateFront.classList.remove('hidden');
 }
@@ -1846,22 +2110,8 @@ function saveUpdateFrontFields(unitId, frenteName, isConcluido) {
     fData.duracaoProj = parseFloat(document.getElementById('update-dur-proj').value) || 1;
     fData.duracaoReal = parseFloat(document.getElementById('update-dur-real').value) || 1;
 
-    // Grab unified material inputs as text
-    const matNome = document.getElementById('update-mat-nome').value.trim();
-    const matQtd = document.getElementById('update-mat-qtd').value.trim();
-
-    if (matNome && matQtd) {
-        fData.materials = {
-            material: matNome,
-            tipo: document.getElementById('update-mat-tipo').value.trim(),
-            subtipo: document.getElementById('update-mat-subtipo').value.trim(),
-            quantidade: matQtd,
-            observacao: document.getElementById('update-mat-obs').value.trim(),
-            data_lancamento: fData.materials?.data_lancamento || new Date().toLocaleDateString('pt-BR')
-        };
-    } else {
-        fData.materials = {};
-    }
+    // Save activeModalMaterials to the frontsData
+    fData.materials = activeModalMaterials;
 
     if (isConcluido) {
         const dataFinalInput = document.getElementById('update-data-final').value;
@@ -1964,6 +2214,124 @@ function openAddReprovaModal(unitId) {
     modalAddReprova.classList.remove('hidden');
 }
 
+function addExcelReprovaRow() {
+    const tbody = document.getElementById('modal-rep-excel-body');
+    if (!tbody) return;
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <select class="excel-rep-local" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                <option value="">Selecione...</option>
+                <option value="Cozinha">Cozinha</option>
+                <option value="Área de Serviço">Área de Serviço</option>
+                <option value="Sala de Estar">Sala de Estar</option>
+                <option value="Banheiro 1">Banheiro 1</option>
+                <option value="Banheiro 2">Banheiro 2</option>
+                <option value="Quarto 1">Quarto 1</option>
+                <option value="Quarto 2">Quarto 2</option>
+                <option value="Sacada/Varanda">Sacada/Varanda</option>
+                <option value="Corredor/Hall">Corredor/Hall</option>
+            </select>
+        </td>
+        <td><input type="text" class="excel-rep-desc" placeholder="Ex: Piso oco" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td><input type="text" class="excel-rep-mat" placeholder="Ex: Piso" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td><input type="text" class="excel-rep-tipo" placeholder="Ex: AC3" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td><input type="text" class="excel-rep-sub" placeholder="Ex: Cinza" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td><input type="text" class="excel-rep-qtd" placeholder="Ex: 2 sacos" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td><input type="text" class="excel-rep-resp" placeholder="Ex: Ivan" style="width: 100%; padding: 4px; font-size: 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></td>
+        <td style="text-align: center; vertical-align: middle;">
+            <button type="button" class="btn-remove-excel-row" style="background: none; border: none; color: var(--status-reprovado); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;"><i class="fa fa-trash"></i></button>
+        </td>
+    `;
+    
+    tr.querySelector('.btn-remove-excel-row').addEventListener('click', () => {
+        tr.remove();
+    });
+    
+    tbody.appendChild(tr);
+}
+
+function saveExcelReprovas() {
+    const modalUnitTitleEl = document.getElementById('modal-unit-title');
+    const unitId = modalUnitTitleEl.dataset.unitId;
+    const u = projectState.units.find(x => x.id === unitId);
+    if (!u) return;
+    
+    const tbody = document.getElementById('modal-rep-excel-body');
+    const rows = tbody.querySelectorAll('tr');
+    
+    let addedCount = 0;
+    const errors = [];
+    const newReprovas = [];
+    
+    rows.forEach((row, idx) => {
+        const local = row.querySelector('.excel-rep-local').value;
+        const desc = row.querySelector('.excel-rep-desc').value.trim();
+        const mat = row.querySelector('.excel-rep-mat').value.trim();
+        const tipo = row.querySelector('.excel-rep-tipo').value.trim();
+        const subtipo = row.querySelector('.excel-rep-sub').value.trim();
+        const qtd = row.querySelector('.excel-rep-qtd').value.trim();
+        const resp = row.querySelector('.excel-rep-resp').value.trim();
+        
+        // Skip completely empty rows
+        if (!local && !desc && !mat && !tipo && !subtipo && !qtd && !resp) {
+            return;
+        }
+        
+        // Validation
+        if (!local) {
+            errors.push(`Linha ${idx + 1}: Selecione o Local.`);
+            return;
+        }
+        if (!desc) {
+            errors.push(`Linha ${idx + 1}: Preencha a descrição da falha.`);
+            return;
+        }
+        if (!resp) {
+            errors.push(`Linha ${idx + 1}: Preencha o responsável pela correção.`);
+            return;
+        }
+        
+        const repItem = {
+            id: uuidv4(),
+            descricao: desc,
+            responsavel: resp,
+            data_inicio: new Date().toLocaleDateString('pt-BR'),
+            data_fim: "",
+            servico: FRENTES_SEQUENCIA[u.activeFrontIndex] || "VQ",
+            local: local,
+            status: "Pendente",
+            material: mat,
+            tipo_material: mat ? tipo : "",
+            subtipo_material: mat ? subtipo : "",
+            quantidade_material: mat ? qtd : ""
+        };
+        newReprovas.push(repItem);
+    });
+    
+    if (errors.length > 0) {
+        alert("Erros encontrados:\n" + errors.join("\n"));
+        return;
+    }
+    
+    if (newReprovas.length === 0) {
+        alert("Nenhum item válido para salvar. Preencha pelo menos uma linha.");
+        return;
+    }
+    
+    newReprovas.forEach(rep => {
+        u.reprovas.push(rep);
+    });
+    u.status_geral = "Reprovado";
+    
+    saveState();
+    alert(`${newReprovas.length} reprova(s) cadastrada(s) com sucesso!`);
+    
+    // Refresh modal
+    openUnitDetailsModal(u.id);
+}
+
 function handleAddReprovaSubmit(e) {
     e.preventDefault();
     const unitId = document.getElementById('rep-unit-id').value;
@@ -2013,6 +2381,27 @@ function uuidv4() {
     });
 }
 
+// Helper to parse quantity strings (e.g. "12 caixas" -> { val: 12, unit: "caixas" })
+function parseQtd(qtdStr) {
+    if (qtdStr === null || qtdStr === undefined) return { val: 0, unit: "" };
+    const str = String(qtdStr).trim();
+    if (!str) return { val: 0, unit: "" };
+    const match = str.match(/^([\d.,]+)\s*(.*)$/);
+    if (match) {
+        const val = parseFloat(match[1].replace(',', '.')) || 0;
+        const unit = match[2].trim();
+        return { val, unit };
+    }
+    return { val: 0, unit: "" };
+}
+
+// Helper to format quantity values with unit (e.g. 12, "caixas" -> "12 caixas")
+function formatQtd(val, unit) {
+    if (val === 0) return "-";
+    const rounded = Math.round(val * 100) / 100;
+    return unit ? `${rounded} ${unit}` : `${rounded}`;
+}
+
 // Render unified materials consumption page
 function renderInsumosPage() {
     const towerFilter = document.getElementById('filter-ins-tower').value;
@@ -2024,27 +2413,55 @@ function renderInsumosPage() {
     tbody.innerHTML = '';
     let matchedInsumos = [];
     
+    // 1. Standard fronts
     projectState.units.forEach(u => {
         FRENTES_SEQUENCIA.forEach(frente => {
             const fData = u.frontsData[frente] || {};
-            if (fData.materials && fData.materials.material) {
+            const materials = getMaterialsList(fData);
+            materials.forEach(m => {
+                if (m.material) {
+                    matchedInsumos.push({
+                        tower: u.tower,
+                        unit: u.unit,
+                        frente: frente,
+                        data: m.data_lancamento || fData.dataFinal || "",
+                        responsavel: fData.responsavel || "",
+                        material: m.material,
+                        tipo: m.tipo || "",
+                        subtipo: m.subtipo || "",
+                        quantidade: m.quantidade || "",
+                        observacao: m.observacao || "",
+                        isRework: false,
+                        status: fData.concluido ? "Concluído" : "Ativo"
+                    });
+                }
+            });
+        });
+    });
+
+    // 2. Reprovas (Rework insumos)
+    projectState.units.forEach(u => {
+        u.reprovas.forEach(r => {
+            if (r.material) {
                 matchedInsumos.push({
                     tower: u.tower,
                     unit: u.unit,
-                    frente: frente,
-                    data: fData.materials.data_lancamento || fData.dataFinal || "",
-                    responsavel: fData.responsavel || "",
-                    material: fData.materials.material,
-                    tipo: fData.materials.tipo || "",
-                    subtipo: fData.materials.subtipo || "",
-                    quantidade: fData.materials.quantidade,
-                    observacao: fData.materials.observacao || ""
+                    frente: r.servico,
+                    data: r.data_fim || r.data_inicio || "",
+                    responsavel: r.responsavel || "",
+                    material: r.material,
+                    tipo: r.tipo_material || "",
+                    subtipo: r.subtipo_material || "",
+                    quantidade: r.quantidade_material || "",
+                    observacao: r.descricao || "",
+                    isRework: true,
+                    status: r.status // "Pendente" or "Resolvido"
                 });
             }
         });
     });
     
-    // Apply filters
+    // Apply global filters
     if (towerFilter !== 'all') {
         matchedInsumos = matchedInsumos.filter(m => m.tower === towerFilter);
     }
@@ -2057,25 +2474,76 @@ function renderInsumosPage() {
             m.tipo.toLowerCase().includes(searchQuery) ||
             m.subtipo.toLowerCase().includes(searchQuery) ||
             m.observacao.toLowerCase().includes(searchQuery) ||
-            m.unit.toLowerCase().includes(searchQuery) // Permitir busca por unidade
+            m.unit.toLowerCase().includes(searchQuery)
         );
+    }
+
+    // Apply column-level filters (Tab 1)
+    const colFilters = {
+        tower: (document.getElementById('col-filter-tower')?.value || '').toLowerCase().trim(),
+        unit: (document.getElementById('col-filter-unit')?.value || '').toLowerCase().trim(),
+        frente: (document.getElementById('col-filter-frente')?.value || '').toLowerCase().trim(),
+        data: (document.getElementById('col-filter-data')?.value || '').toLowerCase().trim(),
+        resp: (document.getElementById('col-filter-resp')?.value || '').toLowerCase().trim(),
+        material: (document.getElementById('col-filter-material')?.value || '').toLowerCase().trim(),
+        tipo: (document.getElementById('col-filter-tipo')?.value || '').toLowerCase().trim(),
+        subtipo: (document.getElementById('col-filter-subtipo')?.value || '').toLowerCase().trim(),
+        qtd: (document.getElementById('col-filter-qtd')?.value || '').toLowerCase().trim(),
+        obs: (document.getElementById('col-filter-obs')?.value || '').toLowerCase().trim()
+    };
+
+    if (colFilters.tower) {
+        matchedInsumos = matchedInsumos.filter(m => m.tower.toLowerCase().includes(colFilters.tower));
+    }
+    if (colFilters.unit) {
+        matchedInsumos = matchedInsumos.filter(m => m.unit.toLowerCase().includes(colFilters.unit));
+    }
+    if (colFilters.frente) {
+        matchedInsumos = matchedInsumos.filter(m => m.frente.toLowerCase().includes(colFilters.frente));
+    }
+    if (colFilters.data) {
+        matchedInsumos = matchedInsumos.filter(m => m.data.toLowerCase().includes(colFilters.data));
+    }
+    if (colFilters.resp) {
+        matchedInsumos = matchedInsumos.filter(m => m.responsavel.toLowerCase().includes(colFilters.resp));
+    }
+    if (colFilters.material) {
+        matchedInsumos = matchedInsumos.filter(m => m.material.toLowerCase().includes(colFilters.material));
+    }
+    if (colFilters.tipo) {
+        matchedInsumos = matchedInsumos.filter(m => m.tipo.toLowerCase().includes(colFilters.tipo));
+    }
+    if (colFilters.subtipo) {
+        matchedInsumos = matchedInsumos.filter(m => m.subtipo.toLowerCase().includes(colFilters.subtipo));
+    }
+    if (colFilters.qtd) {
+        matchedInsumos = matchedInsumos.filter(m => m.quantidade.toLowerCase().includes(colFilters.qtd));
+    }
+    if (colFilters.obs) {
+        matchedInsumos = matchedInsumos.filter(m => m.observacao.toLowerCase().includes(colFilters.obs));
     }
     
     if (matchedInsumos.length === 0) {
         emptyMsg.classList.remove('hidden');
-        return;
+    } else {
+        emptyMsg.classList.add('hidden');
     }
-    emptyMsg.classList.add('hidden');
     
+    // Render Tab 1 (Lançamento Individual)
     matchedInsumos.forEach(m => {
         const tr = document.createElement('tr');
+        let reworkBadge = '';
+        if (m.isRework) {
+            const badgeBg = m.status === 'Pendente' ? 'var(--status-reprovado)' : 'var(--status-aprovado)';
+            reworkBadge = `<span class="badge" style="background-color: ${badgeBg}; color: #fff; margin-left: 6px; font-size: 0.72rem; padding: 2px 4px; border-radius: 4px;">Retrabalho (${m.status})</span>`;
+        }
         tr.innerHTML = `
             <td>${m.tower}</td>
             <td><strong>${m.unit}</strong></td>
             <td><span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-primary)">${m.frente}</span></td>
             <td>${m.data}</td>
             <td>${m.responsavel}</td>
-            <td><strong>${m.material}</strong></td>
+            <td><strong>${m.material}</strong>${reworkBadge}</td>
             <td>${m.tipo}</td>
             <td>${m.subtipo}</td>
             <td>${m.quantidade}</td>
@@ -2083,35 +2551,283 @@ function renderInsumosPage() {
         `;
         tbody.appendChild(tr);
     });
-}
 
-// Export materials consumption ledger to CSV
-function exportInsumosCSV() {
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Include BOM for proper Excel encoding
-    csvContent += "Torre,Unidade,Frente,DataLancamento,Responsavel,Material,Tipo,Subtipo,Quantidade,Observacao\n";
+    // --- TAB 2: RELATÓRIO DE COMPRAS & PROJEÇÃO ---
+    const frontConcludedCounts = {};
+    const frontTotalCounts = {};
+    
+    FRENTES_SEQUENCIA.forEach(f => {
+        frontConcludedCounts[f] = 0;
+        frontTotalCounts[f] = 0;
+    });
     
     projectState.units.forEach(u => {
-        FRENTES_SEQUENCIA.forEach(frente => {
-            const fData = u.frontsData[frente] || {};
-            if (fData.materials && fData.materials.material) {
-                const m = fData.materials;
-                const row = [
-                    u.tower,
-                    u.unit,
-                    frente,
-                    m.data_lancamento || fData.dataFinal || "",
-                    `"${(fData.responsavel || '').replace(/"/g, '""')}"`,
-                    `"${m.material.replace(/"/g, '""')}"`,
-                    `"${(m.tipo || '').replace(/"/g, '""')}"`,
-                    `"${(m.subtipo || '').replace(/"/g, '""')}"`,
-                    `"${(m.quantidade || '').replace(/"/g, '""')}"`,
-                    `"${(m.observacao || '').replace(/"/g, '""')}"`
-                ].join(",");
-                csvContent += row + "\n";
+        FRENTES_SEQUENCIA.forEach(f => {
+            frontTotalCounts[f]++;
+            if (u.frontsData[f] && u.frontsData[f].concluido) {
+                frontConcludedCounts[f]++;
             }
         });
     });
     
+    const firstRunConsumption = {}; // frente -> key -> { sum, unit }
+    
+    projectState.units.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(f => {
+            const fData = u.frontsData[f] || {};
+            if (fData.concluido) {
+                const materials = getMaterialsList(fData);
+                materials.forEach(m => {
+                    if (m.material) {
+                        const key = `${m.material.trim()}|${(m.tipo || '').trim()}|${(m.subtipo || '').trim()}`;
+                        if (!firstRunConsumption[f]) firstRunConsumption[f] = {};
+                        if (!firstRunConsumption[f][key]) firstRunConsumption[f][key] = { sum: 0, unit: "" };
+                        
+                        const parsed = parseQtd(m.quantidade);
+                        firstRunConsumption[f][key].sum += parsed.val;
+                        if (parsed.unit) {
+                            firstRunConsumption[f][key].unit = parsed.unit;
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    const matKeys = new Set();
+    const keyUnits = {};
+    const usedSum = {};
+    const reworkPendenteSum = {};
+    
+    projectState.units.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(f => {
+            const fData = u.frontsData[f] || {};
+            if (fData.concluido) {
+                const materials = getMaterialsList(fData);
+                materials.forEach(m => {
+                    if (m.material) {
+                        const key = `${m.material.trim()}|${(m.tipo || '').trim()}|${(m.subtipo || '').trim()}`;
+                        matKeys.add(key);
+                        const parsed = parseQtd(m.quantidade);
+                        usedSum[key] = (usedSum[key] || 0) + parsed.val;
+                        if (parsed.unit) keyUnits[key] = parsed.unit;
+                    }
+                });
+            }
+        });
+        
+        u.reprovas.forEach(r => {
+            if (r.material) {
+                const key = `${r.material.trim()}|${(r.tipo_material || '').trim()}|${(r.subtipo_material || '').trim()}`;
+                matKeys.add(key);
+                const parsed = parseQtd(r.quantidade_material);
+                if (parsed.unit) keyUnits[key] = parsed.unit;
+                
+                if (r.status === 'Resolvido') {
+                    usedSum[key] = (usedSum[key] || 0) + parsed.val;
+                } else if (r.status === 'Pendente') {
+                    reworkPendenteSum[key] = (reworkPendenteSum[key] || 0) + parsed.val;
+                }
+            }
+        });
+    });
+    
+    const projectedFaltaSum = {};
+    
+    matKeys.forEach(key => {
+        projectedFaltaSum[key] = 0;
+        FRENTES_SEQUENCIA.forEach(f => {
+            const totalUnits = frontTotalCounts[f] || 0;
+            const concludedUnits = frontConcludedCounts[f] || 0;
+            const remainingUnits = totalUnits - concludedUnits;
+            
+            if (remainingUnits > 0) {
+                const consumption = firstRunConsumption[f] && firstRunConsumption[f][key];
+                if (consumption && concludedUnits > 0) {
+                    const avg = consumption.sum / concludedUnits;
+                    const projected = remainingUnits * avg;
+                    projectedFaltaSum[key] += projected;
+                }
+            }
+        });
+    });
+    
+    const projectionTbody = document.getElementById('table-ins-projection-body');
+    if (projectionTbody) {
+        projectionTbody.innerHTML = '';
+        if (matKeys.size === 0) {
+            projectionTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum insumo disponível para projeção.</td></tr>`;
+        } else {
+            const sortedKeys = Array.from(matKeys).sort();
+            sortedKeys.forEach(key => {
+                const [material, tipo, subtipo] = key.split('|');
+                const unit = keyUnits[key] || '';
+                const used = usedSum[key] || 0;
+                const falta = projectedFaltaSum[key] || 0;
+                const rework = reworkPendenteSum[key] || 0;
+                const total = falta + rework;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${material}</strong></td>
+                    <td>${tipo || '-'}${subtipo ? ` / ${subtipo}` : ''}</td>
+                    <td>${formatQtd(used, unit)}</td>
+                    <td>${formatQtd(falta, unit)}</td>
+                    <td>${formatQtd(rework, unit)}</td>
+                    <td style="font-weight: bold; color: var(--status-agendado)">${formatQtd(total, unit)}</td>
+                `;
+                projectionTbody.appendChild(tr);
+            });
+        }
+    }
+
+    // --- TAB 3: ESTIMATIVA DE RETRABALHO (MÉDIAS) ---
+    const reworkGroup = {};
+    projectState.units.forEach(u => {
+        u.reprovas.forEach(r => {
+            if (r.material) {
+                const mKey = `${r.material.trim()}|${(r.tipo_material || '').trim()}|${(r.subtipo_material || '').trim()}`;
+                const groupKey = `${r.servico}|${mKey}`;
+                
+                if (!reworkGroup[groupKey]) {
+                    reworkGroup[groupKey] = {
+                        frente: r.servico,
+                        material: r.material,
+                        tipo: r.tipo_material || "",
+                        subtipo: r.subtipo_material || "",
+                        unit: "",
+                        reprovedUnitsSet: new Set(),
+                        totalReprovaVal: 0
+                    };
+                }
+                
+                const parsed = parseQtd(r.quantidade_material);
+                reworkGroup[groupKey].totalReprovaVal += parsed.val;
+                if (parsed.unit) {
+                    reworkGroup[groupKey].unit = parsed.unit;
+                }
+                reworkGroup[groupKey].reprovedUnitsSet.add(u.id);
+            }
+        });
+    });
+    
+    const reworkTbody = document.getElementById('table-ins-rework-avg-body');
+    if (reworkTbody) {
+        reworkTbody.innerHTML = '';
+        const groupKeys = Object.keys(reworkGroup).sort();
+        if (groupKeys.length === 0) {
+            reworkTbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Nenhum retrabalho registrado para cálculo de médias.</td></tr>`;
+        } else {
+            groupKeys.forEach(gKey => {
+                const g = reworkGroup[gKey];
+                const totalUnits = frontTotalCounts[g.frente] || 0;
+                const concludedUnits = frontConcludedCounts[g.frente] || 0;
+                const remainingUnits = totalUnits - concludedUnits;
+                const aptosReprovados = g.reprovedUnitsSet.size;
+                
+                const taxaReprova = concludedUnits > 0 ? (aptosReprovados / concludedUnits) * 100 : 0;
+                const avgExtra = aptosReprovados > 0 ? g.totalReprovaVal / aptosReprovados : 0;
+                const projAptosReprovar = remainingUnits * (taxaReprova / 100);
+                const projConsumoExtra = projAptosReprovar * avgExtra;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-primary)">${g.frente}</span></td>
+                    <td>
+                        <strong>${g.material}</strong>
+                        ${g.tipo ? `<div class="text-muted" style="font-size: 0.75rem;">${g.tipo}${g.subtipo ? ` / ${g.subtipo}` : ''}</div>` : ''}
+                    </td>
+                    <td>${concludedUnits}</td>
+                    <td>${aptosReprovados}</td>
+                    <td>${taxaReprova.toFixed(1)}%</td>
+                    <td>${formatQtd(avgExtra, g.unit)}</td>
+                    <td>${remainingUnits}</td>
+                    <td>${projAptosReprovar.toFixed(1)}</td>
+                    <td style="font-weight: bold; color: var(--status-reprovado)">${formatQtd(projConsumoExtra, g.unit)}</td>
+                `;
+                reworkTbody.appendChild(tr);
+            });
+        }
+    }
+}
+
+// Export materials consumption ledger to CSV
+function exportInsumosCSV() {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "Torre,Unidade,Frente,Data Lancamento,Responsavel,Material,Tipo,Subtipo,Quantidade,Observacao,Tipo de Execucao,Status\n";
+    
+    let listToExport = [];
+    
+    // 1. Standard fronts
+    projectState.units.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(frente => {
+            const fData = u.frontsData[frente] || {};
+            const materials = getMaterialsList(fData);
+            materials.forEach(m => {
+                if (m.material) {
+                    listToExport.push({
+                        tower: u.tower,
+                        unit: u.unit,
+                        frente: frente,
+                        data: m.data_lancamento || fData.dataFinal || "",
+                        responsavel: fData.responsavel || "",
+                        material: m.material,
+                        tipo: m.tipo || "",
+                        subtipo: m.subtipo || "",
+                        quantidade: m.quantidade || "",
+                        observacao: m.observacao || "",
+                        tipoExec: "Primeira Execução",
+                        status: fData.concluido ? "Concluído" : "Ativo"
+                    });
+                }
+            });
+        });
+    });
+
+    // 2. Reprovas
+    projectState.units.forEach(u => {
+        u.reprovas.forEach(r => {
+            if (r.material) {
+                listToExport.push({
+                    tower: u.tower,
+                    unit: u.unit,
+                    frente: r.servico,
+                    data: r.data_fim || r.data_inicio || "",
+                    responsavel: r.responsavel || "",
+                    material: r.material,
+                    tipo: r.tipo_material || "",
+                    subtipo: r.subtipo_material || "",
+                    quantidade: r.quantidade_material || "",
+                    observacao: r.descricao || "",
+                    tipoExec: "Retrabalho",
+                    status: r.status
+                });
+            }
+        });
+    });
+    
+    listToExport.forEach(m => {
+        const row = [
+            uClean(m.tower),
+            uClean(m.unit),
+            uClean(m.frente),
+            uClean(m.data),
+            uClean(m.responsavel),
+            uClean(m.material),
+            uClean(m.tipo),
+            uClean(m.subtipo),
+            uClean(m.quantidade),
+            uClean(m.observacao),
+            uClean(m.tipoExec),
+            uClean(m.status)
+        ].join(",");
+        csvContent += row + "\n";
+    });
+    
+    function uClean(val) {
+        return `"${String(val || '').replace(/"/g, '""')}"`;
+    }
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -2127,6 +2843,139 @@ function addDays(dateStr, days) {
     const date = new Date(dateStr + 'T12:00:00'); // Use noon to avoid timezone shift
     date.setDate(date.getDate() + days);
     return date.toLocaleDateString('pt-BR');
+}
+
+// Helper to parse DD/MM/YYYY into a Date object
+function parseDateBR(dateStr) {
+    if (!dateStr || dateStr === "-" || dateStr === "Concluído") return null;
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    return null;
+}
+
+// Helper to format YYYY-MM-DD into DD/MM/YYYY
+function formatDateBR(dateStr) {
+    if (!dateStr) return "-";
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+}
+
+// Calculates completion dates (real or projected) for a given service across all towers
+function getProjectionsForService(serviceName) {
+    if (!serviceName) return { towerProjections: {}, overall: "-" };
+    
+    const fConfig = projectState.frentesConfig[serviceName] || { dataInicio: "2026-06-08", capacidadeDia: 2 };
+    const dataInicio = fConfig.dataInicio || "2026-06-08";
+    
+    // Units pending this service
+    const pendingUnits = projectState.units.filter(u => !u.frontsData[serviceName] || !u.frontsData[serviceName].concluido);
+    pendingUnits.sort((a, b) => {
+        if (a.tower !== b.tower) return a.tower.localeCompare(b.tower);
+        if (a.floor !== b.floor) return a.floor - b.floor;
+        return a.unit.localeCompare(b.unit);
+    });
+    
+    const cap = parseFloat(fConfig.capacidadeDia) || 1;
+    const numWorkers = Math.max(1, Math.floor(cap));
+    const workersAvailability = Array(numWorkers).fill(0);
+    
+    const projectionsMap = {};
+    pendingUnits.forEach((u) => {
+        let minWorkerIdx = 0;
+        let minAvailTime = workersAvailability[0];
+        for (let w = 1; w < numWorkers; w++) {
+            if (workersAvailability[w] < minAvailTime) {
+                minAvailTime = workersAvailability[w];
+                minWorkerIdx = w;
+            }
+        }
+        
+        const uData = u.frontsData[serviceName] || {};
+        let duration = 1 / cap;
+        if (uData.duracaoProj && parseFloat(uData.duracaoProj) > 0) {
+            duration = parseFloat(uData.duracaoProj);
+        }
+        
+        const startTime = workersAvailability[minWorkerIdx];
+        const endTime = startTime + duration;
+        workersAvailability[minWorkerIdx] = endTime;
+        
+        const daysNeeded = Math.floor(endTime);
+        projectionsMap[u.id] = addDays(dataInicio, daysNeeded);
+    });
+    
+    const towerProjections = {};
+    projectState.towers.forEach(tow => {
+        const towPending = pendingUnits.filter(u => u.tower === tow.name);
+        if (towPending.length === 0) {
+            // Service is completed. Find the max completion date of this service in this tower
+            let maxDate = null;
+            projectState.units.filter(u => u.tower === tow.name).forEach(u => {
+                const fData = u.frontsData[serviceName];
+                if (fData && fData.dataFinal) {
+                    if (!maxDate || fData.dataFinal > maxDate) {
+                        maxDate = fData.dataFinal;
+                    }
+                }
+            });
+            towerProjections[tow.name] = maxDate ? formatDateBR(maxDate) : "Concluído";
+        } else {
+            const lastUnit = towPending[towPending.length - 1];
+            towerProjections[tow.name] = projectionsMap[lastUnit.id] || "-";
+        }
+    });
+    
+    const overall = pendingUnits.length === 0 ? "Concluído" : (projectionsMap[pendingUnits[pendingUnits.length - 1].id] || "-");
+    
+    return { towerProjections, overall };
+}
+
+// Calculates overall completion date of all services for a tower
+function getTowerOverallCompletionDate(towerName) {
+    let maxDate = null;
+    let maxDateStr = "";
+    
+    for (const f of FRENTES_SEQUENCIA) {
+        const proj = getProjectionsForService(f);
+        const dateStr = proj.towerProjections[towerName];
+        if (dateStr && dateStr !== "-" && dateStr !== "Concluído") {
+            const parsed = parseDateBR(dateStr);
+            if (parsed) {
+                if (!maxDate || parsed > maxDate) {
+                    maxDate = parsed;
+                    maxDateStr = dateStr;
+                }
+            }
+        }
+    }
+    
+    if (!maxDateStr) {
+        const towerUnits = projectState.units.filter(u => u.tower === towerName);
+        const allDone = towerUnits.every(u => u.activeFrontIndex === 12);
+        if (allDone) {
+            let maxFinal = null;
+            towerUnits.forEach(u => {
+                FRENTES_SEQUENCIA.forEach(f => {
+                    const fData = u.frontsData[f];
+                    if (fData && fData.dataFinal) {
+                        if (!maxFinal || fData.dataFinal > maxFinal) {
+                            maxFinal = fData.dataFinal;
+                        }
+                    }
+                });
+            });
+            if (maxFinal) return formatDateBR(maxFinal);
+            return "Concluído";
+        }
+        return "-";
+    }
+    
+    return maxDateStr;
 }
 
 // Helper para detectar se a unidade pulou alguma etapa (Executada fora de ordem)
