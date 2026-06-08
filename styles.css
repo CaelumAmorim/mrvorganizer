@@ -614,6 +614,7 @@ h1, h2, h3, h4, h5, h6 {
     flex-direction: column;
     height: 100vh;
     overflow-y: auto;
+    min-width: 0;
 }
 
 .top-navbar {
@@ -663,6 +664,7 @@ h1, h2, h3, h4, h5, h6 {
 .content-container {
     padding: 2rem;
     flex: 1;
+    min-width: 0;
 }
 
 .page-section {
