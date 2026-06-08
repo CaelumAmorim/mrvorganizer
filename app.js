@@ -1229,6 +1229,9 @@ function navigateToPage(pageId) {
     } else if (pageId === 'page-reprovas') {
         pageTitle.textContent = "Histórico de Reprovas e Consumo";
         renderReprovasPage();
+    } else if (pageId === 'page-planejamento') {
+        pageTitle.textContent = "Planejamento Semanal (Metas e Abastecimento)";
+        renderWeeklyPlanningReport();
     } else if (pageId === 'page-insumos') {
         pageTitle.textContent = "Consumo de Insumos";
         renderInsumosPage();
@@ -1702,9 +1705,6 @@ function renderTowers() {
             gridContainer.appendChild(row);
         }
     });
-
-    // Render Weekly Planning Report
-    renderWeeklyPlanningReport();
 }
 
 // -------------------------------------------------------------
