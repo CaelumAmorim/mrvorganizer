@@ -1705,21 +1705,75 @@ function renderTowers() {
                     
                     if (frontIndex === FRENTES_SEQUENCIA.length) {
                         frontName = "Entrega dos Sonhos";
-                        cellClass = "c-concluido";
                     } else {
                         frontName = FRENTES_SEQUENCIA[frontIndex];
-                        cellClass = `c-${frontName.toLowerCase().replace(/\s+/g, '')}`;
                     }
 
-                    // VQ / VA / VH / VE Filter Map Custom Coloring
-                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
-                        const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
-                        cellClass = `va-${status.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}`;
+                    // 1. Determine match status if filter is active
+                    let isMatch = false;
+                    if (activeFilterFront) {
+                        if (activeFilterFront === 'Concluido') {
+                            isMatch = (frontIndex === FRENTES_SEQUENCIA.length);
+                        } else {
+                            isMatch = (frontName === activeFilterFront);
+                        }
+                    }
+
+                    // 2. Apply styling based on filter state
+                    let inlineBgColor = "";
+                    let inlineTextColor = "";
+                    
+                    if (!activeFilterFront) {
+                        // No filter: paint every unit in its active front color
+                        if (frontIndex === FRENTES_SEQUENCIA.length) {
+                            inlineBgColor = FRENTES_CORES["Concluido"] || "#00c853";
+                            inlineTextColor = "#ffffff";
+                        } else {
+                            inlineBgColor = FRENTES_CORES[frontName] || "#ccc";
+                            inlineTextColor = (frontName === 'VQ' || inlineBgColor === '#eab308') ? '#000000' : '#ffffff';
+                        }
+                    } else {
+                        // Filter active
+                        if (isMatch) {
+                            // Unit matches the filter: paint it
+                            if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
+                                // Quality front: use CSS classes (va-aprovado, va-reprovado, etc.)
+                                const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
+                                cellClass = `va-${status.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}`;
+                            } else {
+                                // Production front or Concluido: use inline color
+                                if (frontIndex === FRENTES_SEQUENCIA.length) {
+                                    inlineBgColor = FRENTES_CORES["Concluido"] || "#00c853";
+                                    inlineTextColor = "#ffffff";
+                                } else {
+                                    inlineBgColor = FRENTES_CORES[frontName] || "#ccc";
+                                    inlineTextColor = (frontName === 'VQ' || inlineBgColor === '#eab308') ? '#000000' : '#ffffff';
+                                }
+                            }
+                        } else {
+                            // Unit is outside the filter: remains colorless (default grey/dark)
+                            cellClass = ""; // no color class
+                            inlineBgColor = ""; // no inline background
+                            inlineTextColor = ""; // no inline color
+                        }
                     }
                     
-                    cell.classList.add(cellClass);
+                    if (cellClass) {
+                        cell.className = `unit-cell ${cellClass}`;
+                        if (matchedUnit.isHall) {
+                            cell.classList.add('hall-cell');
+                        }
+                    }
+                    if (inlineBgColor) {
+                        cell.style.backgroundColor = inlineBgColor;
+                        cell.style.color = inlineTextColor;
+                    } else {
+                        cell.style.backgroundColor = "";
+                        cell.style.color = "";
+                    }
+
                     const displayText = matchedUnit.isHall ? matchedUnit.unit : unitNum;
-                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
+                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront) && isMatch) {
                         const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
                         cell.innerHTML = `
                             <span class="unit-num" style="font-size: 0.8rem; font-weight: 700; line-height: 1.1;">${displayText}</span>
@@ -1748,12 +1802,6 @@ function renderTowers() {
                     cell.title = `${matchedUnit.tower} - ${unitNum}\nFrente: ${frontIndex === FRENTES_SEQUENCIA.length ? 'Entrega dos Sonhos' : frontName}\nStatus: ${statusGeralText}`;
                     if (outOfOrder) cell.title += `\n⚠️ Fora de sequência!`;
                     if (delayed) cell.title += `\n⚠️ Prazo atrasado!`;
-                    
-                    // Dim cell if filtering is active and it doesn't match
-                    let isMatch = activeFilterFront === frontName;
-                    if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
-                        isMatch = true;
-                    }
                     
                     if (activeFilterFront && !isMatch) {
                         cell.classList.add('dimmed');
