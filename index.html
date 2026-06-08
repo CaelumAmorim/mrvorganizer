@@ -397,6 +397,27 @@
                     <div class="towers-container" id="towers-grid-root">
                         <!-- Inserido dinamicamente via JS -->
                     </div>
+
+                    <!-- CARD: ALERTAS DE SEQUÊNCIA E HIATOS (PLANEJAMENTO) -->
+                    <div class="card mt-4" id="alertas-planejamento-container">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <h2><i class="fa fa-triangle-exclamation text-warning"></i> Alertas de Planejamento (Choques e Hiatos de Sequência)</h2>
+                            <button id="btn-restore-alerts" class="btn btn-xs btn-outline hidden"><i class="fa fa-rotate-left"></i> Restaurar Ocultos</button>
+                        </div>
+                        <div class="card-body">
+                            <p class="section-desc" style="margin-bottom: 1rem;">
+                                Monitoramento inteligente de inconsistências no cronograma: choques de frentes (serviços subsequentes que ultrapassam frentes anteriores por produtividade mais rápida) e possíveis hiatos (intervalos sem serviço superiores a 30 dias).
+                            </p>
+                            <div id="seq-alerts-list" class="rep-alerts-list">
+                                <!-- Preenchido via JS -->
+                            </div>
+                            <div id="no-seq-alerts-msg" class="empty-state hidden">
+                                <i class="fa fa-square-check text-success"></i>
+                                <h3>Cronograma Consistente</h3>
+                                <p>Nenhum choque de produtividade ou hiato de execução superior a 30 dias foi detectado para as frentes projetadas.</p>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- PÁGINA 2: FRENTES DE SERVIÇO (SUB-ABAS) -->

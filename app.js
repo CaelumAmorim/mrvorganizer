@@ -1084,6 +1084,18 @@ function setupEventListeners() {
     
     // Weekly Planning listeners initialization
     initWeeklyPlanningListeners();
+
+    // Restore Sequence Alerts listener
+    const btnRestoreAlerts = document.getElementById('btn-restore-alerts');
+    if (btnRestoreAlerts) {
+        btnRestoreAlerts.addEventListener('click', async () => {
+            if (projectState) {
+                projectState.dismissedAlerts = [];
+                await saveState();
+                renderSequenceAlerts();
+            }
+        });
+    }
 }
 
 // Login Success Routing
@@ -1705,6 +1717,9 @@ function renderTowers() {
             gridContainer.appendChild(row);
         }
     });
+
+    // Render Sequence Alerts
+    renderSequenceAlerts();
 }
 
 // -------------------------------------------------------------
@@ -5934,5 +5949,240 @@ function downloadCSV(csvRows, filename) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function renderSequenceAlerts() {
+    const alertsList = document.getElementById('seq-alerts-list');
+    const noAlertsMsg = document.getElementById('no-seq-alerts-msg');
+    const alertsContainer = document.getElementById('alertas-planejamento-container');
+
+    if (!alertsList || !noAlertsMsg || !alertsContainer) return;
+
+    if (!projectState || !projectState.units) {
+        alertsList.innerHTML = '';
+        noAlertsMsg.classList.remove('hidden');
+        return;
+    }
+
+    // Initialize dismissedAlerts array if missing
+    projectState.dismissedAlerts = projectState.dismissedAlerts || [];
+
+    // Show/hide restore button
+    const btnRestore = document.getElementById('btn-restore-alerts');
+    if (btnRestore) {
+        const hasDismissed = projectState.dismissedAlerts.length > 0;
+        const isAuthorized = currentUser && ['admin', 'engenheiro', 'gestor', 'diretor'].includes(currentUser.role);
+        if (hasDismissed && isAuthorized) {
+            btnRestore.classList.remove('hidden');
+        } else {
+            btnRestore.classList.add('hidden');
+        }
+    }
+
+    // Build projections cache for all fronts
+    const allProjections = {};
+    FRENTES_SEQUENCIA.forEach(f => {
+        allProjections[f] = getProjectionsMapForService(f);
+    });
+
+    const rawWarnings = [];
+
+    projectState.units.forEach(u => {
+        for (let i = 0; i < FRENTES_SEQUENCIA.length; i++) {
+            const frenteA = FRENTES_SEQUENCIA[i];
+            const fDataA = u.frontsData[frenteA] || {};
+            const dateA_end = getUnitFrontExpectedDate(u, frenteA, allProjections);
+            if (!dateA_end) continue;
+
+            const fConfigA = projectState.frentesConfig[frenteA] || {};
+            const capA = parseFloat(fConfigA.capacidadeDia) || 1;
+            let durationA = 1 / capA;
+            if (fDataA.duracaoProj && parseFloat(fDataA.duracaoProj) > 0) {
+                durationA = parseFloat(fDataA.duracaoProj);
+            }
+            const dateA_start = new Date(dateA_end.getTime() - durationA * 24 * 60 * 60 * 1000);
+
+            for (let j = i + 1; j < FRENTES_SEQUENCIA.length; j++) {
+                const frenteB = FRENTES_SEQUENCIA[j];
+                const fDataB = u.frontsData[frenteB] || {};
+                
+                if (fDataB.concluido) continue;
+
+                const dateB_end = getUnitFrontExpectedDate(u, frenteB, allProjections);
+                if (!dateB_end) continue;
+
+                const fConfigB = projectState.frentesConfig[frenteB] || {};
+                const capB = parseFloat(fConfigB.capacidadeDia) || 1;
+                let durationB = 1 / capB;
+                if (fDataB.duracaoProj && parseFloat(fDataB.duracaoProj) > 0) {
+                    durationB = parseFloat(fDataB.duracaoProj);
+                }
+                const dateB_start = new Date(dateB_end.getTime() - durationB * 24 * 60 * 60 * 1000);
+
+                // 1. Check clash: B starts before A ends
+                if (dateB_start < dateA_end) {
+                    rawWarnings.push({
+                        type: 'Choque',
+                        tower: u.tower,
+                        unitName: u.unit,
+                        frenteA: frenteA,
+                        frenteB: frenteB,
+                        dateA_end: dateA_end,
+                        dateB_start: dateB_start
+                    });
+                }
+
+                // 2. Check gap: B is the immediate next and gap is > 30 days
+                if (j === i + 1) {
+                    const gapDays = (dateB_start.getTime() - dateA_end.getTime()) / (24 * 60 * 60 * 1000);
+                    if (gapDays > 30) {
+                        rawWarnings.push({
+                            type: 'Hiato',
+                            tower: u.tower,
+                            unitName: u.unit,
+                            frenteA: frenteA,
+                            frenteB: frenteB,
+                            dateA_end: dateA_end,
+                            dateB_start: dateB_start,
+                            gapDays: gapDays
+                        });
+                    }
+                }
+            }
+        }
+    });
+
+    // Group the raw warnings
+    const groupedAlerts = {};
+    rawWarnings.forEach(w => {
+        const key = `${w.type}|${w.tower}|${w.frenteA}|${w.frenteB}`;
+        
+        // Filter out if this key is in dismissedAlerts
+        if (projectState.dismissedAlerts.includes(key)) return;
+
+        if (!groupedAlerts[key]) {
+            groupedAlerts[key] = {
+                type: w.type,
+                tower: w.tower,
+                frenteA: w.frenteA,
+                frenteB: w.frenteB,
+                units: [],
+                datesA_end: [],
+                datesB_start: [],
+                gaps: []
+            };
+        }
+        groupedAlerts[key].units.push(w.unitName);
+        groupedAlerts[key].datesA_end.push(w.dateA_end);
+        groupedAlerts[key].datesB_start.push(w.dateB_start);
+        if (w.gapDays) groupedAlerts[key].gaps.push(w.gapDays);
+    });
+
+    alertsList.innerHTML = '';
+
+    const alertKeys = Object.keys(groupedAlerts);
+
+    if (alertKeys.length === 0) {
+        noAlertsMsg.classList.remove('hidden');
+        return;
+    }
+
+    noAlertsMsg.classList.add('hidden');
+
+    const isAuthorized = currentUser && ['admin', 'engenheiro', 'gestor', 'diretor'].includes(currentUser.role);
+
+    alertKeys.forEach(key => {
+        const g = groupedAlerts[key];
+        
+        g.units.sort((a, b) => {
+            const numA = parseInt(a.replace(/\D/g, ''), 10);
+            const numB = parseInt(b.replace(/\D/g, ''), 10);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b);
+        });
+
+        let unitsListText = g.units.slice(0, 15).join(', ');
+        if (g.units.length > 15) {
+            unitsListText += `, (+${g.units.length - 15} outras)`;
+        }
+
+        const isChoque = g.type === 'Choque';
+        const alertItem = document.createElement('div');
+        alertItem.className = `rep-alert-item ${isChoque ? 'urgent' : 'moderate'}`;
+        alertItem.style.display = 'flex';
+        alertItem.style.justifyContent = 'space-between';
+        alertItem.style.alignItems = 'flex-start';
+        alertItem.style.gap = '12px';
+        
+        const minDateA_end = new Date(Math.min(...g.datesA_end.map(d => d.getTime())));
+        const minDateB_start = new Date(Math.min(...g.datesB_start.map(d => d.getTime())));
+        
+        let contentHtml = "";
+        if (isChoque) {
+            contentHtml = `
+                <div style="display: flex; gap: 10px; flex: 1;">
+                    <i class="fa fa-triangle-exclamation text-danger" style="font-size: 1.1rem; margin-top: 2px;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">
+                            Choque de Produtividade na ${g.tower} (Inconsistência de Sequência)
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                            A frente <strong>${g.frenteB}</strong> está projetada para iniciar antes do término da frente anterior <strong>${g.frenteA}</strong>.
+                            <br>
+                            O choque afetará <strong>${g.units.length} unidades</strong>: <span style="color: var(--primary-color); font-weight: 500;">${unitsListText}</span>.
+                            <br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">
+                                Início de ${g.frenteB} previsto a partir de ${formatDateBRDate(minDateB_start)} (Frente anterior ${g.frenteA} termina em ${formatDateBRDate(minDateA_end)}).
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            const avgGap = Math.round(g.gaps.reduce((sum, v) => sum + v, 0) / g.gaps.length);
+            contentHtml = `
+                <div style="display: flex; gap: 10px; flex: 1;">
+                    <i class="fa fa-hourglass-half text-warning" style="font-size: 1.1rem; margin-top: 2px;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">
+                            Possível Hiato de Execução na ${g.tower} (> 30 dias de ociosidade)
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                            Há um intervalo ocioso médio de <strong>${avgGap} dias</strong> de espera entre o término de <strong>${g.frenteA}</strong> e o início de <strong>${g.frenteB}</strong>.
+                            <br>
+                            O hiato afetará <strong>${g.units.length} unidades</strong>: <span style="color: var(--primary-color); font-weight: 500;">${unitsListText}</span>.
+                            <br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">
+                                Término de ${g.frenteA} em ${formatDateBRDate(minDateA_end)} e início de ${g.frenteB} em ${formatDateBRDate(minDateB_start)}.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const actionHtml = isAuthorized ? `
+            <button class="btn btn-xs btn-outline btn-dismiss-alert" style="border-color: var(--border-color); display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 0.75rem;" data-alert-key="${key}">
+                <i class="fa fa-square-check text-success"></i> Check
+            </button>
+        ` : "";
+
+        alertItem.innerHTML = contentHtml + actionHtml;
+
+        if (isAuthorized) {
+            const btnDismiss = alertItem.querySelector('.btn-dismiss-alert');
+            if (btnDismiss) {
+                btnDismiss.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const keyVal = btnDismiss.dataset.alertKey;
+                    projectState.dismissedAlerts.push(keyVal);
+                    await saveState();
+                    renderSequenceAlerts();
+                });
+            }
+        }
+
+        alertsList.appendChild(alertItem);
+    });
 }
 
