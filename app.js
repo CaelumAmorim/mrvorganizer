@@ -2901,9 +2901,24 @@ async function restoreSplendoreSeed() {
         return;
     }
     if (confirm("Deseja realmente restaurar os dados originais importados da Planilha Splendore? Todos os novos lançamentos serão perdidos.")) {
-        localStorage.removeItem('mrv_project_state');
+        const localKey = 'mrv_project_state_' + activeProjectName;
+        localStorage.removeItem(localKey);
+        
+        if (syncMode === 'api') {
+            try {
+                const response = await fetch('/api/project/reset?name=' + encodeURIComponent(activeProjectName));
+                if (response.ok) {
+                    alert("Dados semente da Planilha Splendore restaurados no servidor!");
+                    location.reload();
+                    return;
+                }
+            } catch (e) {
+                console.error("Erro ao resetar no servidor, tentando local", e);
+            }
+        }
+        
         await loadSeedData();
-        alert("Dados semente da Planilha Splendore restaurados!");
+        alert("Dados semente da Planilha Splendore restaurados localmente!");
         navigateToPage('page-mapa');
     }
 }

@@ -793,7 +793,7 @@ h1, h2, h3, h4, h5, h6 {
 /* --- TOWERS DISPLAY GRID --- */
 .towers-container {
     display: flex;
-    gap: 1.25rem;
+    gap: 2.5rem;
     align-items: flex-start;
     overflow-x: auto;
     padding: 1rem 0;
@@ -801,12 +801,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .tower-block {
     flex: 1;
-    min-width: 450px;
-    max-width: 520px;
+    min-width: 320px;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    padding: 1rem;
+    padding: 1.5rem;
     box-shadow: var(--shadow);
 }
 

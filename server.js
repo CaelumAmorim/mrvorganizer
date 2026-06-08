@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -110,31 +111,39 @@ app.get('/api/project', async (req, res) => {
     }
 });
 
-// Endpoint to reset PostgreSQL state from JSON file on disk
+// Endpoint to reset project state from clean Git repository state
 app.get('/api/project/reset', async (req, res) => {
     const projectName = req.query.name || 'chapada_fontana';
     const dbPath = path.join(__dirname, `database_${projectName}.json`);
     
-    if (fs.existsSync(dbPath)) {
-        try {
-            const data = fs.readFileSync(dbPath, 'utf8');
-            const projectState = JSON.parse(data);
-            
-            if (pgClient) {
-                await pgClient.query(
-                    'INSERT INTO projects (name, state) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET state = $2',
-                    [projectName, JSON.stringify(projectState)]
-                );
-                return res.json({ success: true, message: `Successfully reset PostgreSQL state for ${projectName} from disk.` });
-            } else {
-                return res.json({ success: true, message: `Running in local mode. File on disk is already updated.` });
-            }
-        } catch (e) {
-            return res.status(500).json({ error: "Failed to reset project database: " + e.message });
+    // Discard any local modifications to the database file by checking it out from Git
+    exec(`git checkout -- database_${projectName}.json`, async (err) => {
+        if (err) {
+            console.error("Failed to restore database from Git: ", err);
+            // Non-blocking fallback: proceed with whatever is on disk
         }
-    } else {
-        return res.status(404).json({ error: "Database file not found on disk." });
-    }
+        
+        if (fs.existsSync(dbPath)) {
+            try {
+                const data = fs.readFileSync(dbPath, 'utf8');
+                const projectState = JSON.parse(data);
+                
+                if (pgClient) {
+                    await pgClient.query(
+                        'INSERT INTO projects (name, state) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET state = $2',
+                        [projectName, JSON.stringify(projectState)]
+                    );
+                    return res.json({ success: true, message: `Successfully reset PostgreSQL state and file on disk for ${projectName}.` });
+                } else {
+                    return res.json({ success: true, message: `Successfully reset database file for ${projectName} to clean Git state.` });
+                }
+            } catch (e) {
+                return res.status(500).json({ error: "Failed to reset project database: " + e.message });
+            }
+        } else {
+            return res.status(404).json({ error: "Database file not found on disk." });
+        }
+    });
 });
 
 // API Endpoint to save project state
