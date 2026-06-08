@@ -1116,12 +1116,6 @@ function getEditableRoles(currentUserRole) {
     if (currentUserRole === 'admin') {
         return ['diretor', 'gestor', 'engenheiro', 'analista', 'fiscal', 'controle'];
     }
-    if (currentUserRole === 'diretor') {
-        return ['gestor', 'engenheiro', 'analista', 'fiscal', 'controle'];
-    }
-    if (currentUserRole === 'gestor') {
-        return ['engenheiro', 'analista', 'fiscal', 'controle'];
-    }
     if (currentUserRole === 'engenheiro') {
         return ['analista', 'fiscal', 'controle'];
     }
@@ -2759,7 +2753,7 @@ function handleConfigTowersSubmit(e) {
     e.preventDefault();
     const canConfig = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor');
     if (!canConfig) {
-        alert("Apenas o Engenheiro e o Gestor podem alterar a estrutura da obra.");
+        alert("Apenas o Engenheiro, Administrador e Gestor podem alterar a estrutura da obra.");
         return;
     }
     const rows = document.querySelectorAll('.config-tower-card');
@@ -2775,9 +2769,11 @@ function handleConfigTowersSubmit(e) {
 
         // Generate units for this configured tower, reusing state if existing
         for (let f = floors; f >= 1; f--) {
+            const tCode = name.replace(/\s+/g, '').substring(0, 2).toUpperCase(); // e.g. T1, T2
+
+            // Normal units
             for (let u = 1; u <= unitsPerFloor; u++) {
                 const unitNum = `${f}` + String(u).padStart(2, '0');
-                const tCode = name.replace(/\s+/g, '').substring(0, 2).toUpperCase(); // e.g. T1, T2
                 const id = `${tCode}-${unitNum}`;
 
                 // Try to find if this unit already existed in previous state
@@ -2811,6 +2807,40 @@ function handleConfigTowersSubmit(e) {
                         reprovas: []
                     });
                 }
+            }
+
+            // Hall unit for this floor
+            const hallUnitNum = `${f} Hall`;
+            const hallId = `${tCode}-${f}-HALL`;
+            const existingHall = projectState.units.find(x => x.tower === name && x.floor == f && x.unit === hallUnitNum);
+
+            if (existingHall) {
+                newUnits.push(existingHall);
+            } else {
+                const fronts = {};
+                FRENTES_SEQUENCIA.forEach(frente => {
+                    fronts[frente] = {
+                        responsavel: "",
+                        dataInicio: "",
+                        dataFinal: "",
+                        duracaoProj: 0,
+                        duracaoReal: 0,
+                        concluido: false,
+                        materials: {}
+                    };
+                });
+
+                newUnits.push({
+                    id: hallId,
+                    tower: name,
+                    floor: f,
+                    unit: hallUnitNum,
+                    status_geral: "Ativo",
+                    activeFrontIndex: 0,
+                    frontsData: fronts,
+                    reprovas: [],
+                    isHall: true
+                });
             }
         }
     });
