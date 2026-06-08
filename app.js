@@ -6391,7 +6391,7 @@ async function renderProjectSelector() {
 function openGenerateProjectFlow() {
     const pwd = prompt("Digite a senha do Administrador para gerar uma nova obra:");
     if (pwd === null) return;
-    if (pwd !== 'admin123') {
+    if (pwd !== '030348') {
         alert("Senha incorreta! Acesso negado.");
         return;
     }

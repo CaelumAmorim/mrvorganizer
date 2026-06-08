@@ -802,10 +802,11 @@ h1, h2, h3, h4, h5, h6 {
 .tower-block {
     flex: 1;
     min-width: 320px;
+    max-width: 450px;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: var(--shadow);
 }
 
