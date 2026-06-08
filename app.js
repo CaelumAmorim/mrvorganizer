@@ -185,6 +185,7 @@ async function initApp() {
 async function checkDatabaseConnection() {
     if (!activeProjectName) {
         // Show selection page and hide others
+        await renderProjectSelector();
         document.getElementById('project-selector-container').classList.remove('hidden');
         loginContainer.classList.add('hidden');
         appContainer.classList.add('hidden');
@@ -1042,23 +1043,40 @@ function setupEventListeners() {
         });
     }
 
-    // Project selection click listeners
-    document.querySelectorAll('.project-card').forEach(card => {
-        card.addEventListener('click', async () => {
-            activeProjectName = card.getAttribute('data-project');
-            sessionStorage.setItem('mrv_active_project_name', activeProjectName);
-            
-            // Load project-specific database
-            await checkDatabaseConnection();
-            
-            // Transition view
-            document.getElementById('project-selector-container').classList.add('hidden');
-            loginContainer.classList.remove('hidden');
-            
-            // Check active session for this project
-            checkAuthSession();
+    // Modal Generate Project bindings
+    const btnAddNewTowerRow = document.getElementById('btn-add-new-tower-row');
+    if (btnAddNewTowerRow) {
+        btnAddNewTowerRow.addEventListener('click', addNewTowerConfigRow);
+    }
+    const btnCloseGenerateProject = document.getElementById('btn-close-generate-project');
+    if (btnCloseGenerateProject) {
+        btnCloseGenerateProject.addEventListener('click', () => {
+            document.getElementById('modal-generate-project').classList.add('hidden');
         });
-    });
+    }
+    const btnCancelGenerateProject = document.getElementById('btn-cancel-generate-project');
+    if (btnCancelGenerateProject) {
+        btnCancelGenerateProject.addEventListener('click', () => {
+            document.getElementById('modal-generate-project').classList.add('hidden');
+        });
+    }
+    const newProjectNameInput = document.getElementById('new-project-name');
+    if (newProjectNameInput) {
+        newProjectNameInput.addEventListener('input', (e) => {
+            const clean = e.target.value
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9\s-_]/g, "")
+                .trim()
+                .replace(/\s+/g, "_");
+            document.getElementById('new-project-key').value = clean;
+        });
+    }
+    const formGenerateProject = document.getElementById('form-generate-project');
+    if (formGenerateProject) {
+        formGenerateProject.addEventListener('submit', handleGenerateProjectSubmit);
+    }
 
     // Batch approval listeners
     const btnBatchTrigger = document.getElementById('btn-batch-approve-trigger');
@@ -6277,5 +6295,331 @@ function renderSequenceAlerts() {
 
         alertsList.appendChild(alertItem);
     });
+}
+
+async function renderProjectSelector() {
+    const grid = document.querySelector('.project-cards-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    let projects = [];
+    
+    // 1. Try to load from server
+    try {
+        const res = await fetch('/api/projects');
+        if (res.ok) {
+            projects = await res.json();
+            // Save to localStorage as cache
+            localStorage.setItem('mrv_projects_list', JSON.stringify(projects));
+        }
+    } catch (e) {
+        console.log("Offline or no server, loading projects from cache");
+    }
+
+    // 2. Fallback to localStorage
+    if (projects.length === 0) {
+        const cached = localStorage.getItem('mrv_projects_list');
+        if (cached) {
+            try {
+                projects = JSON.parse(cached);
+            } catch (e) {}
+        }
+    }
+
+    // 3. Guarantee default projects are in the list
+    const defaults = [
+        { key: 'chapada_fontana', name: 'Chapada Fontana', iconClass: 'fa-building-circle-check', city: 'Cuiabá - MT' },
+        { key: 'citta_splendore', name: 'Cittá Splendore', iconClass: 'fa-building-shield', city: 'Cuiabá - MT' }
+    ];
+
+    defaults.forEach(d => {
+        if (!projects.some(p => p.key === d.key)) {
+            projects.unshift(d);
+        }
+    });
+
+    // 4. Render project cards
+    projects.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        card.setAttribute('data-project', p.key);
+        card.style.cssText = `background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; text-align: center;`;
+        
+        const iconClass = p.iconClass || 'fa-building-wheat';
+        const city = p.city || 'Obra Cadastrada';
+        
+        card.innerHTML = `
+            <i class="fa ${iconClass} text-success" style="font-size: 2.2rem; margin-bottom: 0.75rem;"></i>
+            <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px;">${p.name}</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">${city}</p>
+        `;
+        
+        card.addEventListener('click', async () => {
+            activeProjectName = p.key;
+            sessionStorage.setItem('mrv_active_project_name', activeProjectName);
+            
+            // Load project-specific database
+            await checkDatabaseConnection();
+            
+            // Transition view
+            document.getElementById('project-selector-container').classList.add('hidden');
+            loginContainer.classList.remove('hidden');
+            
+            // Check active session for this project
+            checkAuthSession();
+        });
+        
+        grid.appendChild(card);
+    });
+
+    // 5. Render "Gerar Nova Obra" card
+    const genCard = document.createElement('div');
+    genCard.className = 'project-card';
+    genCard.id = 'btn-generate-project';
+    genCard.style.cssText = `background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; text-align: center; border-style: dashed;`;
+    
+    genCard.innerHTML = `
+        <i class="fa fa-circle-plus text-success" style="font-size: 2.2rem; margin-bottom: 0.75rem;"></i>
+        <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px;">Gerar Nova Obra</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Apenas Administrador (senha)</p>
+    `;
+    
+    genCard.addEventListener('click', openGenerateProjectFlow);
+    grid.appendChild(genCard);
+}
+
+function openGenerateProjectFlow() {
+    const pwd = prompt("Digite a senha do Administrador para gerar uma nova obra:");
+    if (pwd === null) return;
+    if (pwd !== 'admin123') {
+        alert("Senha incorreta! Acesso negado.");
+        return;
+    }
+    
+    const modal = document.getElementById('modal-generate-project');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.getElementById('form-generate-project').reset();
+        document.getElementById('new-project-towers-list').innerHTML = '';
+        addNewTowerConfigRow();
+    }
+}
+
+function addNewTowerConfigRow() {
+    const container = document.getElementById('new-project-towers-list');
+    const towerIndex = container.children.length + 1;
+    
+    const row = document.createElement('div');
+    row.className = 'config-tower-card';
+    row.style.cssText = `margin-bottom: 1rem; border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; position: relative;`;
+    
+    row.innerHTML = `
+        <button type="button" class="btn-remove-tower" style="position: absolute; top: 10px; right: 10px; color: var(--status-reprovado); background: none; border: none; cursor: pointer;"><i class="fa fa-trash"></i></button>
+        <div class="form-row">
+            <div class="form-group col">
+                <label>Nome da Torre</label>
+                <input type="text" class="new-t-name" placeholder="Ex: Torre ${String(towerIndex).padStart(2, '0')}" value="Torre ${String(towerIndex).padStart(2, '0')}" required>
+            </div>
+            <div class="form-row col">
+                <div class="form-group col">
+                    <label>Pavimentos</label>
+                    <input type="number" class="new-t-floors" min="1" max="30" value="12" required>
+                </div>
+                <div class="form-group col">
+                    <label>Aptos por Pavimento</label>
+                    <input type="number" class="new-t-units" min="1" max="20" value="8" required>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    row.querySelector('.btn-remove-tower').addEventListener('click', () => {
+        if (container.children.length > 1) {
+            row.remove();
+        } else {
+            alert("A obra precisa ter pelo menos uma torre configurada!");
+        }
+    });
+    
+    container.appendChild(row);
+}
+
+async function handleGenerateProjectSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('new-project-name').value.trim();
+    const key = document.getElementById('new-project-key').value.trim();
+    
+    if (!name || !key) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+    }
+    
+    const rows = document.querySelectorAll('#new-project-towers-list .config-tower-card');
+    const newTowers = [];
+    const newUnits = [];
+    
+    rows.forEach(row => {
+        const tName = row.querySelector('.new-t-name').value.trim();
+        const floors = parseInt(row.querySelector('.new-t-floors').value);
+        const unitsPerFloor = parseInt(row.querySelector('.new-t-units').value);
+        
+        newTowers.push({ name: tName, floors, unitsPerFloor });
+        
+        for (let f = floors; f >= 1; f--) {
+            const tCode = tName.replace(/\s+/g, '').substring(0, 2).toUpperCase();
+            
+            for (let u = 1; u <= unitsPerFloor; u++) {
+                const unitNum = `${f}` + String(u).padStart(2, '0');
+                const id = `${tCode}-${unitNum}`;
+                
+                const fronts = {};
+                FRENTES_SEQUENCIA.forEach(frente => {
+                    fronts[frente] = {
+                        responsavel: "",
+                        dataInicio: "",
+                        dataFinal: "",
+                        duracaoProj: 0,
+                        duracaoReal: 0,
+                        concluido: false,
+                        materials: {}
+                    };
+                });
+                
+                newUnits.push({
+                    id: id,
+                    tower: tName,
+                    floor: f,
+                    unit: unitNum,
+                    status_geral: "Ativo",
+                    activeFrontIndex: 0,
+                    frontsData: fronts,
+                    reprovas: []
+                });
+            }
+            
+            const hallUnitNum = `${f} Hall`;
+            const hallId = `${tCode}-${f}-HALL`;
+            
+            const fronts = {};
+            FRENTES_SEQUENCIA.forEach(frente => {
+                fronts[frente] = {
+                    responsavel: "",
+                    dataInicio: "",
+                    dataFinal: "",
+                    duracaoProj: 0,
+                    duracaoReal: 0,
+                    concluido: false,
+                    materials: {}
+                };
+            });
+            
+            newUnits.push({
+                id: hallId,
+                tower: tName,
+                floor: f,
+                unit: hallUnitNum,
+                status_geral: "Ativo",
+                activeFrontIndex: 0,
+                frontsData: fronts,
+                reprovas: [],
+                isHall: true
+            });
+        }
+    });
+    
+    const defaultUsers = [
+        { username: "admin", password: "admin123", role: "admin", name: "Administrador Geral" },
+        { username: "fiscal", password: "fiscal123", role: "fiscal", name: "Fiscal de Campo" }
+    ];
+    
+    const frentesConfig = {};
+    const today_str = new Date().toISOString().split('T')[0];
+    FRENTES_SEQUENCIA.forEach(f => {
+        frentesConfig[f] = {
+            dataInicio: today_str,
+            capacidadeDia: 2,
+            colaboradores: []
+        };
+    });
+    
+    const newProjectState = {
+        name: name,
+        towers: newTowers,
+        units: newUnits,
+        users: defaultUsers,
+        frentesConfig: frentesConfig,
+        frentesMigrationRun: true,
+        frentesMigrationV2Run: true
+    };
+    
+    activeProjectName = key;
+    projectState = newProjectState;
+    
+    sessionStorage.setItem('mrv_active_project_name', activeProjectName);
+    
+    if (syncMode === 'api') {
+        try {
+            const response = await fetch('/api/project?name=' + encodeURIComponent(activeProjectName), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectState)
+            });
+            if (response.ok) {
+                let projects = [];
+                const cached = localStorage.getItem('mrv_projects_list');
+                if (cached) {
+                    try { projects = JSON.parse(cached); } catch (e) {}
+                }
+                if (!projects.some(p => p.key === key)) {
+                    projects.push({ key, name });
+                    localStorage.setItem('mrv_projects_list', JSON.stringify(projects));
+                }
+                
+                alert(`Obra "${name}" gerada com sucesso no servidor!`);
+                document.getElementById('modal-generate-project').classList.add('hidden');
+                
+                syncMode = 'api';
+                updateConnectionBadge(true);
+                dbModeIndicator.textContent = `Conectado: ${projectState.name}`;
+                
+                loginContainer.classList.remove('hidden');
+                document.getElementById('project-selector-container').classList.add('hidden');
+                
+                document.getElementById('username').value = "admin";
+                document.getElementById('password').value = "admin123";
+                
+                return;
+            }
+        } catch (e) {
+            console.error("Failed to save to server, falling back to local only", e);
+        }
+    }
+    
+    syncMode = 'local';
+    const localKey = 'mrv_project_state_' + activeProjectName;
+    localStorage.setItem(localKey, JSON.stringify(projectState));
+    
+    let projects = [];
+    const cached = localStorage.getItem('mrv_projects_list');
+    if (cached) {
+        try { projects = JSON.parse(cached); } catch (e) {}
+    }
+    if (!projects.some(p => p.key === key)) {
+        projects.push({ key, name });
+        localStorage.setItem('mrv_projects_list', JSON.stringify(projects));
+    }
+    
+    alert(`Obra "${name}" gerada localmente no navegador!`);
+    document.getElementById('modal-generate-project').classList.add('hidden');
+    
+    updateConnectionBadge(false);
+    dbModeIndicator.textContent = "Navegador Offline";
+    
+    loginContainer.classList.remove('hidden');
+    document.getElementById('project-selector-container').classList.add('hidden');
+    
+    document.getElementById('username').value = "admin";
+    document.getElementById('password').value = "admin123";
 }
 

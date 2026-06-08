@@ -60,6 +60,34 @@ if (databaseUrl) {
     console.log("===================================================");
 }
 
+// API Endpoint to fetch list of all available project databases
+app.get('/api/projects', (req, res) => {
+    fs.readdir(__dirname, (err, files) => {
+        if (err) {
+            return res.status(500).json({ error: "Failed to read directory" });
+        }
+        const projects = [];
+        files.forEach(file => {
+            if (file.startsWith('database_') && file.endsWith('.json')) {
+                const name = file.replace('database_', '').replace('.json', '');
+                try {
+                    const data = JSON.parse(fs.readFileSync(path.join(__dirname, file), 'utf8'));
+                    projects.push({
+                        key: name,
+                        name: data.name || name
+                    });
+                } catch (e) {
+                    projects.push({
+                        key: name,
+                        name: name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                    });
+                }
+            }
+        });
+        return res.json(projects);
+    });
+});
+
 // API Endpoint to fetch project database state
 app.get('/api/project', async (req, res) => {
     const projectName = req.query.name || 'chapada_fontana';
