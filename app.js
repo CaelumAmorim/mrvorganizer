@@ -1060,6 +1060,57 @@ function setupEventListeners() {
             document.getElementById('modal-generate-project').classList.add('hidden');
         });
     }
+    
+    // Admin credentials form inside Project Generation Modal
+    const formGenProjectAuth = document.getElementById('form-gen-project-auth');
+    if (formGenProjectAuth) {
+        formGenProjectAuth.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const usernameVal = document.getElementById('gen-auth-username').value.trim();
+            const passwordVal = document.getElementById('gen-auth-password').value;
+            
+            if (usernameVal === 'admin' && passwordVal === '030348') {
+                // Hide auth form, show generator form
+                document.getElementById('form-gen-project-auth').classList.add('hidden');
+                document.getElementById('form-generate-project').classList.remove('hidden');
+                
+                // Reset form and initialize list of towers
+                document.getElementById('form-generate-project').reset();
+                document.getElementById('new-project-towers-list').innerHTML = '';
+                addNewTowerConfigRow();
+            } else {
+                alert("Usuário ou senha incorretos. Acesso negado.");
+            }
+        });
+    }
+
+    const btnCancelGenAuth = document.getElementById('btn-cancel-gen-auth');
+    if (btnCancelGenAuth) {
+        btnCancelGenAuth.addEventListener('click', () => {
+            document.getElementById('modal-generate-project').classList.add('hidden');
+        });
+    }
+
+    const toggleGenAuthPassword = document.getElementById('toggle-gen-auth-password');
+    const genAuthPasswordInput = document.getElementById('gen-auth-password');
+    if (toggleGenAuthPassword && genAuthPasswordInput) {
+        toggleGenAuthPassword.addEventListener('click', () => {
+            if (genAuthPasswordInput.type === 'password') {
+                genAuthPasswordInput.type = 'text';
+                toggleGenAuthPassword.querySelector('i').className = 'fa fa-eye-slash';
+            } else {
+                genAuthPasswordInput.type = 'password';
+                toggleGenAuthPassword.querySelector('i').className = 'fa fa-eye';
+            }
+        });
+    }
+
+    // Trigger button from login screen
+    const btnLoginGenerateProject = document.getElementById('btn-login-generate-project');
+    if (btnLoginGenerateProject) {
+        btnLoginGenerateProject.addEventListener('click', openGenerateProjectFlow);
+    }
+    
     const newProjectNameInput = document.getElementById('new-project-name');
     if (newProjectNameInput) {
         newProjectNameInput.addEventListener('input', (e) => {
@@ -6389,19 +6440,31 @@ async function renderProjectSelector() {
 }
 
 function openGenerateProjectFlow() {
-    const pwd = prompt("Digite a senha do Administrador para gerar uma nova obra:");
-    if (pwd === null) return;
-    if (pwd !== '030348') {
-        alert("Senha incorreta! Acesso negado.");
-        return;
-    }
-    
     const modal = document.getElementById('modal-generate-project');
     if (modal) {
         modal.classList.remove('hidden');
-        document.getElementById('form-generate-project').reset();
-        document.getElementById('new-project-towers-list').innerHTML = '';
-        addNewTowerConfigRow();
+        
+        // Exibe tela de autenticação e esconde formulário de geração
+        const authForm = document.getElementById('form-gen-project-auth');
+        if (authForm) {
+            authForm.classList.remove('hidden');
+            authForm.reset();
+        }
+        
+        const genForm = document.getElementById('form-generate-project');
+        if (genForm) {
+            genForm.classList.add('hidden');
+        }
+        
+        // Reseta campo de senha para tipo password e ícone
+        const passwordInput = document.getElementById('gen-auth-password');
+        if (passwordInput) {
+            passwordInput.type = 'password';
+        }
+        const toggleIcon = document.getElementById('toggle-gen-auth-password')?.querySelector('i');
+        if (toggleIcon) {
+            toggleIcon.className = 'fa fa-eye';
+        }
     }
 }
 
