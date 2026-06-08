@@ -5981,6 +5981,31 @@ function downloadCSV(csvRows, filename) {
     document.body.removeChild(link);
 }
 
+function calculateAdditionalCollaboratorsNeeded(frenteName, targetDate, currentDate) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Ensure dates are valid and set in values
+    const currentVal = currentDate.getTime() < today.getTime() ? today.getTime() + 24*60*60*1000 : currentDate.getTime();
+    const targetVal = targetDate.getTime() < today.getTime() ? today.getTime() + 24*60*60*1000 : targetDate.getTime();
+
+    const dCurrent = (currentVal - today.getTime()) / (24 * 60 * 60 * 1000);
+    const dTarget = (targetVal - today.getTime()) / (24 * 60 * 60 * 1000);
+
+    if (dTarget <= 0 || dCurrent <= dTarget) return 0;
+
+    const fConfig = projectState.frentesConfig[frenteName] || {};
+    const colabs = fConfig.colaboradores || [];
+    let nCurrent = colabs.length;
+    if (nCurrent === 0) {
+        const cap = parseFloat(fConfig.capacidadeDia) || 1;
+        nCurrent = Math.max(1, Math.ceil(cap / 0.4)); // assume average 0.4 units/day per colab
+    }
+
+    const additional = Math.ceil(nCurrent * ((dCurrent / dTarget) - 1));
+    return isNaN(additional) || additional < 0 ? 0 : additional;
+}
+
 function renderSequenceAlerts() {
     const alertsList = document.getElementById('seq-alerts-list');
     const noAlertsMsg = document.getElementById('no-seq-alerts-msg');
@@ -6147,6 +6172,19 @@ function renderSequenceAlerts() {
         const minDateA_end = new Date(Math.min(...g.datesA_end.map(d => d.getTime())));
         const minDateB_start = new Date(Math.min(...g.datesB_start.map(d => d.getTime())));
         
+        const avgDateA_end = new Date(g.datesA_end.reduce((sum, d) => sum + d.getTime(), 0) / g.datesA_end.length);
+        const avgDateB_start = new Date(g.datesB_start.reduce((sum, d) => sum + d.getTime(), 0) / g.datesB_start.length);
+
+        let addColabs = 0;
+        if (isChoque) {
+            addColabs = calculateAdditionalCollaboratorsNeeded(g.frenteA, avgDateB_start, avgDateA_end);
+        } else {
+            const avgGap = g.gaps.reduce((sum, v) => sum + v, 0) / g.gaps.length;
+            const reduction = avgGap - 10; // target gap is 10 days
+            const targetDateB_start = new Date(avgDateB_start.getTime() - reduction * 24*60*60*1000);
+            addColabs = calculateAdditionalCollaboratorsNeeded(g.frenteB, targetDateB_start, avgDateB_start);
+        }
+
         let contentHtml = "";
         if (isChoque) {
             contentHtml = `
@@ -6164,6 +6202,11 @@ function renderSequenceAlerts() {
                             <span style="font-size: 0.75rem; color: var(--text-muted);">
                                 Início de ${g.frenteB} previsto a partir de ${formatDateBRDate(minDateB_start)} (Frente anterior ${g.frenteA} termina em ${formatDateBRDate(minDateA_end)}).
                             </span>
+                            ${addColabs > 0 ? `
+                            <div style="margin-top: 6px; font-weight: 600; color: var(--status-reprovado); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa fa-user-plus"></i> Acelerar anterior: a frente <strong>${g.frenteA}</strong> precisa de mais <strong>${addColabs} colaborador(es)</strong> para concluir antes de iniciar ${g.frenteB}.
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -6185,6 +6228,11 @@ function renderSequenceAlerts() {
                             <span style="font-size: 0.75rem; color: var(--text-muted);">
                                 Término de ${g.frenteA} em ${formatDateBRDate(minDateA_end)} e início de ${g.frenteB} em ${formatDateBRDate(minDateB_start)}.
                             </span>
+                            ${addColabs > 0 ? `
+                            <div style="margin-top: 6px; font-weight: 600; color: var(--status-agendado); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa fa-user-plus"></i> Acelerar posterior: a frente <strong>${g.frenteB}</strong> precisa de mais <strong>${addColabs} colaborador(es)</strong> para iniciar mais cedo e eliminar o hiato.
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
