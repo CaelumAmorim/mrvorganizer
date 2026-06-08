@@ -1601,7 +1601,7 @@ function renderTowers() {
                 if (hallUnit) {
                     unitsOrder.push(hallUnit.unit);
                 } else {
-                    unitsOrder.push(`${f}º HALL`);
+                    unitsOrder.push(`${f} Hall`);
                 }
                 for (let u = 5; u <= 8; u++) {
                     unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
@@ -1621,7 +1621,7 @@ function renderTowers() {
                 
                 if (matchedUnit) {
                     if (matchedUnit.isHall) {
-                        cell.style.borderRadius = '50%';
+                        cell.classList.add('hall-cell');
                     }
                     
                     const frontIndex = matchedUnit.activeFrontIndex;
@@ -1643,7 +1643,7 @@ function renderTowers() {
                     }
                     
                     cell.classList.add(cellClass);
-                    const displayText = matchedUnit.isHall ? 'H' : unitNum;
+                    const displayText = matchedUnit.isHall ? matchedUnit.unit : unitNum;
                     if (['VQ', 'VA', 'VH', 'VE'].includes(activeFilterFront)) {
                         const status = getUnitQualityStatus(matchedUnit, activeFilterFront);
                         cell.innerHTML = `
@@ -5466,7 +5466,7 @@ function renderWeeklyPlanningReport() {
             if (hallUnit) {
                 unitsOrder.push(hallUnit.unit);
             } else {
-                unitsOrder.push(`${f}º HALL`);
+                unitsOrder.push(`${f} Hall`);
             }
             for (let u = 5; u <= 8; u++) {
                 unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
@@ -5490,11 +5490,11 @@ function renderWeeklyPlanningReport() {
             cell.className = 'rep-tower-cell';
             
             // Format name/appearance for display
-            const displayText = u.isHall ? 'H' : u.unit;
+            const displayText = u.unit;
             cell.textContent = displayText;
             cell.dataset.unitId = u.id;
             if (u.isHall) {
-                cell.style.borderRadius = '50%';
+                cell.classList.add('hall-cell');
             }
 
             // Determine cell status for color coding

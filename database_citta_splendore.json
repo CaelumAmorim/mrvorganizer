@@ -7867,7 +7867,7 @@
         {
             "id": "T01-12-HALL",
             "tower": "Torre 01",
-            "unit": "12° HALL",
+            "unit": "12 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 12,
@@ -14228,7 +14228,7 @@
         {
             "id": "T02-12-HALL",
             "tower": "Torre 02",
-            "unit": "12° HALL",
+            "unit": "12 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 12,
@@ -23420,7 +23420,7 @@
         {
             "id": "T01-11-HALL",
             "tower": "Torre 01",
-            "unit": "11° HALL",
+            "unit": "11 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 11,
@@ -31546,7 +31546,7 @@
         {
             "id": "T02-11-HALL",
             "tower": "Torre 02",
-            "unit": "11° HALL",
+            "unit": "11 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 11,
@@ -41774,7 +41774,7 @@
         {
             "id": "T01-10-HALL",
             "tower": "Torre 01",
-            "unit": "10° HALL",
+            "unit": "10 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 10,
@@ -51680,7 +51680,7 @@
         {
             "id": "T02-10-HALL",
             "tower": "Torre 02",
-            "unit": "10° HALL",
+            "unit": "10 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 10,
@@ -60115,7 +60115,7 @@
         {
             "id": "T01-9-HALL",
             "tower": "Torre 01",
-            "unit": "9° HALL",
+            "unit": "9 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 9,
@@ -69445,7 +69445,7 @@
         {
             "id": "T02-9-HALL",
             "tower": "Torre 02",
-            "unit": "9° HALL",
+            "unit": "9 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 9,
@@ -74423,7 +74423,7 @@
         {
             "id": "T01-8-HALL",
             "tower": "Torre 01",
-            "unit": "8° HALL",
+            "unit": "8 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 8,
@@ -83096,7 +83096,7 @@
         {
             "id": "T02-8-HALL",
             "tower": "Torre 02",
-            "unit": "8° HALL",
+            "unit": "8 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 8,
@@ -87721,7 +87721,7 @@
         {
             "id": "T01-7-HALL",
             "tower": "Torre 01",
-            "unit": "7° HALL",
+            "unit": "7 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 7,
@@ -95176,7 +95176,7 @@
         {
             "id": "T02-7-HALL",
             "tower": "Torre 02",
-            "unit": "7° HALL",
+            "unit": "7 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 7,
@@ -102829,7 +102829,7 @@
         {
             "id": "T01-6-HALL",
             "tower": "Torre 01",
-            "unit": "6° HALL",
+            "unit": "6 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 6,
@@ -109625,7 +109625,7 @@
         {
             "id": "T02-6-HALL",
             "tower": "Torre 02",
-            "unit": "6° HALL",
+            "unit": "6 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 6,
@@ -116633,7 +116633,7 @@
         {
             "id": "T01-5-HALL",
             "tower": "Torre 01",
-            "unit": "5° HALL",
+            "unit": "5 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 5,
@@ -124592,7 +124592,7 @@
         {
             "id": "T02-5-HALL",
             "tower": "Torre 02",
-            "unit": "5° HALL",
+            "unit": "5 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 5,
@@ -132119,7 +132119,7 @@
         {
             "id": "T01-4-HALL",
             "tower": "Torre 01",
-            "unit": "4° HALL",
+            "unit": "4 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 4,
@@ -139336,7 +139336,7 @@
         {
             "id": "T02-4-HALL",
             "tower": "Torre 02",
-            "unit": "4° HALL",
+            "unit": "4 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 4,
@@ -144858,7 +144858,7 @@
         {
             "id": "T01-3-HALL",
             "tower": "Torre 01",
-            "unit": "3° HALL",
+            "unit": "3 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 3,
@@ -153098,7 +153098,7 @@
         {
             "id": "T02-3-HALL",
             "tower": "Torre 02",
-            "unit": "3° HALL",
+            "unit": "3 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 3,
@@ -157640,7 +157640,7 @@
         {
             "id": "T01-2-HALL",
             "tower": "Torre 01",
-            "unit": "2° HALL",
+            "unit": "2 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 2,
@@ -162447,7 +162447,7 @@
         {
             "id": "T02-2-HALL",
             "tower": "Torre 02",
-            "unit": "2° HALL",
+            "unit": "2 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 2,
@@ -169049,7 +169049,7 @@
         {
             "id": "T01-1-HALL",
             "tower": "Torre 01",
-            "unit": "1° HALL",
+            "unit": "1 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 1,
@@ -175579,7 +175579,7 @@
         {
             "id": "T02-1-HALL",
             "tower": "Torre 02",
-            "unit": "1° HALL",
+            "unit": "1 Hall",
             "isHall": true,
             "activeFrontIndex": 33,
             "floor": 1,
