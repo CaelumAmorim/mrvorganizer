@@ -1702,6 +1702,9 @@ function renderTowers() {
             gridContainer.appendChild(row);
         }
     });
+
+    // Render Weekly Planning Report
+    renderWeeklyPlanningReport();
 }
 
 // -------------------------------------------------------------
@@ -2459,31 +2462,6 @@ function renderReprovasPage() {
 
         tbody.appendChild(tr);
     });
-
-    // Populate planning report tower options
-    const repRepTower = document.getElementById('rep-rep-tower');
-    if (repRepTower && repRepTower.children.length <= 1) {
-        repRepTower.innerHTML = '<option value="">Selecione...</option>';
-        projectState.towers.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.textContent = t.name;
-            repRepTower.appendChild(opt);
-        });
-    }
-
-    // Set default date for planning date to today
-    const repRepDate = document.getElementById('rep-rep-date');
-    if (repRepDate && !repRepDate.value) {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        repRepDate.value = `${yyyy}-${mm}-${dd}`;
-    }
-
-    // Render Weekly Planning Report
-    renderWeeklyPlanningReport();
 }
 
 function resolveReprova(unitId, reprovaId) {
@@ -5399,6 +5377,37 @@ function renderWeeklyPlanningReport() {
 
     if (!towerSelect || !dateInput || !layoutContainer || !grid || !alertsContainer || !alertsList) return;
 
+    // Populate/repopulate planning report tower options if they don't match projectState.towers
+    const currentTowerOptions = Array.from(towerSelect.options).map(o => o.value).filter(Boolean);
+    const expectedTowerNames = projectState ? projectState.towers.map(t => t.name) : [];
+    
+    // Check if current options match expected tower names
+    const needsRepopulate = currentTowerOptions.length !== expectedTowerNames.length ||
+                            !currentTowerOptions.every(name => expectedTowerNames.includes(name));
+
+    if (needsRepopulate && projectState) {
+        towerSelect.innerHTML = '<option value="">Selecione...</option>';
+        projectState.towers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = t.name;
+            towerSelect.appendChild(opt);
+        });
+        
+        if (projectState.towers.length > 0) {
+            towerSelect.value = projectState.towers[0].name;
+        }
+    }
+
+    // Set default date for planning date to today if empty
+    if (!dateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
     const towerName = towerSelect.value;
     if (!towerName) {
         layoutContainer.classList.add('hidden');
@@ -5444,14 +5453,49 @@ function renderWeeklyPlanningReport() {
         const cellsContainer = document.createElement('div');
         cellsContainer.className = 'rep-tower-cells';
 
-        const floorUnits = towerUnits.filter(u => u.floor === f);
-        floorUnits.sort((a, b) => a.unit.localeCompare(b.unit));
+        // Check if this tower has any halls on this floor
+        const hasHallOnThisFloor = towerUnits.some(unit => unit.floor === f && unit.isHall);
+        
+        let unitsOrder = [];
+        if (hasHallOnThisFloor) {
+            // Cittá Splendore/Chapada layout: 1 to 4, Hall, 5 to 8
+            for (let u = 1; u <= 4; u++) {
+                unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+            }
+            const hallUnit = towerUnits.find(unit => unit.floor === f && unit.isHall);
+            if (hallUnit) {
+                unitsOrder.push(hallUnit.unit);
+            } else {
+                unitsOrder.push(`${f}º HALL`);
+            }
+            for (let u = 5; u <= 8; u++) {
+                unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+            }
+        } else {
+            for (let u = 1; u <= (towerObj ? towerObj.unitsPerFloor : 8); u++) {
+                unitsOrder.push(`${f}` + String(u).padStart(2, '0'));
+            }
+        }
 
-        floorUnits.forEach(u => {
+        cellsContainer.style.display = 'grid';
+        cellsContainer.style.gridTemplateColumns = `repeat(${unitsOrder.length}, 1fr)`;
+        cellsContainer.style.gap = '4px';
+        cellsContainer.style.flex = '1';
+
+        unitsOrder.forEach(unitNum => {
+            const u = towerUnits.find(unit => unit.unit == unitNum && unit.floor == f);
+            if (!u) return;
+
             const cell = document.createElement('div');
             cell.className = 'rep-tower-cell';
-            cell.textContent = u.unit;
+            
+            // Format name/appearance for display
+            const displayText = u.isHall ? 'H' : u.unit;
+            cell.textContent = displayText;
             cell.dataset.unitId = u.id;
+            if (u.isHall) {
+                cell.style.borderRadius = '50%';
+            }
 
             // Determine cell status for color coding
             let statusClass = 'alert-none';
