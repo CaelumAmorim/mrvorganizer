@@ -5503,6 +5503,16 @@ function renderWeeklyPlanningReport() {
     const alertsContainer = document.getElementById('rep-alerts-container');
     const alertsList = document.getElementById('rep-alerts-list');
 
+    // New columns DOM elements
+    const schedContainer = document.getElementById('rep-schedule-columns-container');
+    const supplyContainer = document.getElementById('rep-supply-columns-container');
+    const schedLastWeek = document.getElementById('rep-schedule-last-week');
+    const schedThisWeek = document.getElementById('rep-schedule-this-week');
+    const schedNextWeek = document.getElementById('rep-schedule-next-week');
+    const supplyLastWeek = document.getElementById('rep-supply-last-week');
+    const supplyThisWeek = document.getElementById('rep-supply-this-week');
+    const supplyNextWeek = document.getElementById('rep-supply-next-week');
+
     if (!towerSelect || !dateInput || !layoutContainer || !grid || !alertsContainer || !alertsList) return;
 
     // Populate/repopulate planning report tower options if they don't match projectState.towers
@@ -5540,13 +5550,23 @@ function renderWeeklyPlanningReport() {
     if (!towerName) {
         layoutContainer.classList.add('hidden');
         alertsContainer.classList.add('hidden');
+        if (schedContainer) schedContainer.classList.add('hidden');
+        if (supplyContainer) supplyContainer.classList.add('hidden');
         grid.innerHTML = '';
         alertsList.innerHTML = '';
+        if (schedLastWeek) schedLastWeek.innerHTML = '';
+        if (schedThisWeek) schedThisWeek.innerHTML = '';
+        if (schedNextWeek) schedNextWeek.innerHTML = '';
+        if (supplyLastWeek) supplyLastWeek.innerHTML = '';
+        if (supplyThisWeek) supplyThisWeek.innerHTML = '';
+        if (supplyNextWeek) supplyNextWeek.innerHTML = '';
         return;
     }
 
     layoutContainer.classList.remove('hidden');
     alertsContainer.classList.remove('hidden');
+    if (schedContainer) schedContainer.classList.remove('hidden');
+    if (supplyContainer) supplyContainer.classList.remove('hidden');
 
     const refDate = new Date(dateInput.value + 'T12:00:00');
     
@@ -5729,6 +5749,222 @@ function renderWeeklyPlanningReport() {
                 <p>Nenhum alerta de abastecimento para esta semana.</p>
             </div>
         `;
+    }
+
+    // Populate Schedule and Supply Columns
+    const refTime = refDate.getTime();
+    const lastWeekTime = lastWeekStart.getTime();
+    const thisWeekEndTime = refTime + 7 * 24 * 60 * 60 * 1000;
+    const nextWeekEndTime = refTime + 14 * 24 * 60 * 60 * 1000;
+
+    // Lists of items to show
+    const schedLastItems = [];
+    const schedThisItems = [];
+    const schedNextItems = [];
+
+    const supplyLastItems = [];
+    const supplyThisItems = [];
+    const supplyNextItems = [];
+
+    towerUnits.forEach(u => {
+        FRENTES_SEQUENCIA.forEach(frente => {
+            const fData = u.frontsData[frente] || {};
+            const expectedDate = getUnitFrontExpectedDate(u, frente, allProjections);
+            if (!expectedDate) return;
+
+            const expectedTime = expectedDate.getTime();
+            const color = FRENTES_CORES[frente] || '#ccc';
+
+            if (fData.concluido) {
+                // Executed Last Week
+                if (expectedTime >= lastWeekTime && expectedTime < refTime) {
+                    schedLastItems.push({
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        dateStr: fData.dataFinal || formatDateBRDate(expectedDate)
+                    });
+
+                    const materials = getMaterialsForUnitFront(u, frente);
+                    if (materials.length > 0) {
+                        supplyLastItems.push({
+                            unit: u.unit,
+                            floor: u.floor,
+                            frente: frente,
+                            color: color,
+                            materials: materials
+                        });
+                    }
+                }
+            } else {
+                // Pending - This Week
+                if (expectedTime >= refTime && expectedTime < thisWeekEndTime) {
+                    schedThisItems.push({
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        dateStr: formatDateBRDate(expectedDate)
+                    });
+
+                    const materials = getMaterialsForUnitFront(u, frente);
+                    if (materials.length > 0) {
+                        supplyThisItems.push({
+                            unit: u.unit,
+                            floor: u.floor,
+                            frente: frente,
+                            color: color,
+                            materials: materials
+                        });
+                    }
+                }
+                // Pending - Next Week
+                else if (expectedTime >= thisWeekEndTime && expectedTime < nextWeekEndTime) {
+                    schedNextItems.push({
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        dateStr: formatDateBRDate(expectedDate)
+                    });
+
+                    const materials = getMaterialsForUnitFront(u, frente);
+                    if (materials.length > 0) {
+                        supplyNextItems.push({
+                            unit: u.unit,
+                            floor: u.floor,
+                            frente: frente,
+                            color: color,
+                            materials: materials
+                        });
+                    }
+                }
+            }
+        });
+    });
+
+    // Sort helper: by floor (descending) then unit
+    const sortUnits = (a, b) => b.floor - a.floor || a.unit.localeCompare(b.unit);
+
+    // Helper to render schedule item card
+    const createScheduleCard = (item, badgeClass, badgeText) => {
+        const div = document.createElement('div');
+        div.className = 'rep-item-card';
+        div.style.borderLeftColor = item.color;
+        div.innerHTML = `
+            <div class="rep-item-header">
+                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
+                <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
+            </div>
+            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
+            <div class="rep-item-details">
+                <span><i class="fa fa-calendar-day" style="opacity: 0.7; margin-right: 4px;"></i> Data: <strong>${item.dateStr}</strong></span>
+            </div>
+        `;
+        return div;
+    };
+
+    // Helper to render supply item card
+    const createSupplyCard = (item, badgeClass, badgeText) => {
+        const div = document.createElement('div');
+        div.className = 'rep-item-card';
+        div.style.borderLeftColor = item.color;
+
+        let materialsHtml = '';
+        item.materials.forEach(m => {
+            let note = '';
+            if (m.herdado) {
+                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #a855f7 !important;" title="Herdado do Térreo (Apto ${m.terreoUnit})"><i class="fa fa-lightbulb"></i></span>`;
+            } else if (m.observacao && m.observacao.includes('Kit')) {
+                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #fbbf24 !important;" title="Customização Kit Exclusivita"><i class="fa fa-gem"></i></span>`;
+            }
+            materialsHtml += `
+                <li style="margin-bottom: 4px; line-height: 1.2;">
+                    <strong>${m.quantidade}</strong> ${m.tipo || ''} - ${m.material}${note}
+                    ${m.subtipo ? `<span style="display: block; font-size: 0.7rem; opacity: 0.7; padding-left: 4px;">${m.subtipo}</span>` : ''}
+                </li>
+            `;
+        });
+
+        div.innerHTML = `
+            <div class="rep-item-header">
+                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
+                <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
+            </div>
+            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
+            <div class="rep-item-details" style="margin-top: 4px;">
+                <ul style="margin: 0; padding-left: 14px; font-size: 0.8rem; color: var(--text-primary);">
+                    ${materialsHtml}
+                </ul>
+            </div>
+        `;
+        return div;
+    };
+
+    // Populate DOM
+    // Clear list columns
+    schedLastWeek.innerHTML = '';
+    schedThisWeek.innerHTML = '';
+    schedNextWeek.innerHTML = '';
+    supplyLastWeek.innerHTML = '';
+    supplyThisWeek.innerHTML = '';
+    supplyNextWeek.innerHTML = '';
+
+    // 1. Schedule
+    if (schedLastItems.length === 0) {
+        schedLastWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma frente concluída.</p></div>';
+    } else {
+        schedLastItems.sort(sortUnits);
+        schedLastItems.forEach(item => {
+            schedLastWeek.appendChild(createScheduleCard(item, 'badge-concluido', 'Executado'));
+        });
+    }
+
+    if (schedThisItems.length === 0) {
+        schedThisWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma frente planejada.</p></div>';
+    } else {
+        schedThisItems.sort(sortUnits);
+        schedThisItems.forEach(item => {
+            schedThisWeek.appendChild(createScheduleCard(item, 'badge-andamento', 'A Executar'));
+        });
+    }
+
+    if (schedNextItems.length === 0) {
+        schedNextWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma previsão.</p></div>';
+    } else {
+        schedNextItems.sort(sortUnits);
+        schedNextItems.forEach(item => {
+            schedNextWeek.appendChild(createScheduleCard(item, 'badge-previsto', 'Previsão'));
+        });
+    }
+
+    // 2. Supply
+    if (supplyLastItems.length === 0) {
+        supplyLastWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhum material abastecido.</p></div>';
+    } else {
+        supplyLastItems.sort(sortUnits);
+        supplyLastItems.forEach(item => {
+            supplyLastWeek.appendChild(createSupplyCard(item, 'badge-concluido', 'Abastecido'));
+        });
+    }
+
+    if (supplyThisItems.length === 0) {
+        supplyThisWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhum material a abastecer.</p></div>';
+    } else {
+        supplyThisItems.sort(sortUnits);
+        supplyThisItems.forEach(item => {
+            supplyThisWeek.appendChild(createSupplyCard(item, 'badge-andamento', 'A Abastecer'));
+        });
+    }
+
+    if (supplyNextItems.length === 0) {
+        supplyNextWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma previsão.</p></div>';
+    } else {
+        supplyNextItems.sort(sortUnits);
+        supplyNextItems.forEach(item => {
+            supplyNextWeek.appendChild(createSupplyCard(item, 'badge-previsto', 'Previsão'));
+        });
     }
 }
 
