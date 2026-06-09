@@ -5802,17 +5802,15 @@ function renderWeeklyPlanningReport() {
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
-                    if (materials.length > 0) {
-                        supplyLastItems.push({
-                            unitId: u.id,
-                            unit: u.unit,
-                            floor: u.floor,
-                            frente: frente,
-                            color: color,
-                            date: expectedDate,
-                            materials: materials
-                        });
-                    }
+                    supplyLastItems.push({
+                        unitId: u.id,
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        date: expectedDate,
+                        materials: materials
+                    });
                 }
             } else {
                 // Pending - This Week
@@ -5828,17 +5826,15 @@ function renderWeeklyPlanningReport() {
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
-                    if (materials.length > 0) {
-                        supplyThisItems.push({
-                            unitId: u.id,
-                            unit: u.unit,
-                            floor: u.floor,
-                            frente: frente,
-                            color: color,
-                            date: expectedDate,
-                            materials: materials
-                        });
-                    }
+                    supplyThisItems.push({
+                        unitId: u.id,
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        date: expectedDate,
+                        materials: materials
+                    });
                 }
                 // Pending - Next Week
                 else if (expectedTime >= nextWeekMonday.getTime() && expectedTime < nextNextWeekMonday.getTime()) {
@@ -5853,17 +5849,15 @@ function renderWeeklyPlanningReport() {
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
-                    if (materials.length > 0) {
-                        supplyNextItems.push({
-                            unitId: u.id,
-                            unit: u.unit,
-                            floor: u.floor,
-                            frente: frente,
-                            color: color,
-                            date: expectedDate,
-                            materials: materials
-                        });
-                    }
+                    supplyNextItems.push({
+                        unitId: u.id,
+                        unit: u.unit,
+                        floor: u.floor,
+                        frente: frente,
+                        color: color,
+                        date: expectedDate,
+                        materials: materials
+                    });
                 }
             }
         });
@@ -5947,7 +5941,10 @@ function renderWeeklyPlanningReport() {
         // Group items by day index (0 to 6)
         const grouped = {};
         items.forEach(item => {
-            const dayIdx = item.date.getDay();
+            let dayIdx = item.date.getDay();
+            if (dayIdx === 0) {
+                dayIdx = 6; // Map Sunday to Saturday
+            }
             if (!grouped[dayIdx]) grouped[dayIdx] = [];
             grouped[dayIdx].push(item);
         });
@@ -6006,20 +6003,24 @@ function renderWeeklyPlanningReport() {
                     } else {
                         // Render supply item
                         let materialsHtml = '';
-                        item.materials.forEach(m => {
-                            let note = '';
-                            if (m.herdado) {
-                                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #a855f7 !important;" title="Herdado do Térreo (Apto ${m.terreoUnit})"><i class="fa fa-lightbulb"></i></span>`;
-                            } else if (m.observacao && m.observacao.includes('Kit')) {
-                                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #fbbf24 !important;" title="Customização Kit Exclusivita"><i class="fa fa-gem"></i></span>`;
-                            }
-                            materialsHtml += `
-                                <li style="margin-bottom: 4px; line-height: 1.2;">
-                                    <strong>${m.quantidade}</strong> ${m.tipo || ''} - ${m.material}${note}
-                                    ${m.subtipo ? `<span style="display: block; font-size: 0.7rem; opacity: 0.7; padding-left: 4px;">${m.subtipo}</span>` : ''}
-                                </li>
-                            `;
-                        });
+                        if (!item.materials || item.materials.length === 0) {
+                            materialsHtml = `<li style="font-style: italic; color: var(--text-muted); list-style-type: none; margin-left: -14px;">Nenhum insumo planejado</li>`;
+                        } else {
+                            item.materials.forEach(m => {
+                                let note = '';
+                                if (m.herdado) {
+                                    note = ` <span class="text-muted" style="font-size: 0.75rem; color: #a855f7 !important;" title="Herdado do Térreo (Apto ${m.terreoUnit})"><i class="fa fa-lightbulb"></i></span>`;
+                                } else if (m.observacao && m.observacao.includes('Kit')) {
+                                    note = ` <span class="text-muted" style="font-size: 0.75rem; color: #fbbf24 !important;" title="Customização Kit Exclusivita"><i class="fa fa-gem"></i></span>`;
+                                }
+                                materialsHtml += `
+                                    <li style="margin-bottom: 4px; line-height: 1.2;">
+                                        <strong>${m.quantidade}</strong> ${m.tipo || ''} - ${m.material}${note}
+                                        ${m.subtipo ? `<span style="display: block; font-size: 0.7rem; opacity: 0.7; padding-left: 4px;">${m.subtipo}</span>` : ''}
+                                    </li>
+                                `;
+                            });
+                        }
 
                         card.innerHTML = `
                             <div class="rep-item-header">
