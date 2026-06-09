@@ -5752,10 +5752,23 @@ function renderWeeklyPlanningReport() {
     }
 
     // Populate Schedule and Supply Columns
-    const refTime = refDate.getTime();
-    const lastWeekTime = lastWeekStart.getTime();
-    const thisWeekEndTime = refTime + 7 * 24 * 60 * 60 * 1000;
-    const nextWeekEndTime = refTime + 14 * 24 * 60 * 60 * 1000;
+    // Helper to get Monday of a date
+    function getMondayOfDate(d) {
+        const date = new Date(d.getTime());
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(date.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    }
+
+    const refMonday = getMondayOfDate(refDate);
+    const lastWeekMonday = new Date(refMonday.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const nextWeekMonday = new Date(refMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextNextWeekMonday = new Date(refMonday.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const WEEKDAY_NAMES = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+    const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Segunda a Domingo
 
     // Lists of items to show
     const schedLastItems = [];
@@ -5777,65 +5790,77 @@ function renderWeeklyPlanningReport() {
 
             if (fData.concluido) {
                 // Executed Last Week
-                if (expectedTime >= lastWeekTime && expectedTime < refTime) {
+                if (expectedTime >= lastWeekMonday.getTime() && expectedTime < refMonday.getTime()) {
                     schedLastItems.push({
+                        unitId: u.id,
                         unit: u.unit,
                         floor: u.floor,
                         frente: frente,
                         color: color,
+                        date: expectedDate,
                         dateStr: fData.dataFinal || formatDateBRDate(expectedDate)
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
                     if (materials.length > 0) {
                         supplyLastItems.push({
+                            unitId: u.id,
                             unit: u.unit,
                             floor: u.floor,
                             frente: frente,
                             color: color,
+                            date: expectedDate,
                             materials: materials
                         });
                     }
                 }
             } else {
                 // Pending - This Week
-                if (expectedTime >= refTime && expectedTime < thisWeekEndTime) {
+                if (expectedTime >= refMonday.getTime() && expectedTime < nextWeekMonday.getTime()) {
                     schedThisItems.push({
+                        unitId: u.id,
                         unit: u.unit,
                         floor: u.floor,
                         frente: frente,
                         color: color,
+                        date: expectedDate,
                         dateStr: formatDateBRDate(expectedDate)
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
                     if (materials.length > 0) {
                         supplyThisItems.push({
+                            unitId: u.id,
                             unit: u.unit,
                             floor: u.floor,
                             frente: frente,
                             color: color,
+                            date: expectedDate,
                             materials: materials
                         });
                     }
                 }
                 // Pending - Next Week
-                else if (expectedTime >= thisWeekEndTime && expectedTime < nextWeekEndTime) {
+                else if (expectedTime >= nextWeekMonday.getTime() && expectedTime < nextNextWeekMonday.getTime()) {
                     schedNextItems.push({
+                        unitId: u.id,
                         unit: u.unit,
                         floor: u.floor,
                         frente: frente,
                         color: color,
+                        date: expectedDate,
                         dateStr: formatDateBRDate(expectedDate)
                     });
 
                     const materials = getMaterialsForUnitFront(u, frente);
                     if (materials.length > 0) {
                         supplyNextItems.push({
+                            unitId: u.id,
                             unit: u.unit,
                             floor: u.floor,
                             frente: frente,
                             color: color,
+                            date: expectedDate,
                             materials: materials
                         });
                     }
@@ -5844,131 +5869,214 @@ function renderWeeklyPlanningReport() {
         });
     });
 
-    // Sort helper: by floor (descending) then unit
-    const sortUnits = (a, b) => b.floor - a.floor || a.unit.localeCompare(b.unit);
+    // Helper to render weekly summaries
+    const renderWeeklySummary = (container, items, type) => {
+        // Clear summary container first
+        const existingSummary = container.parentElement.querySelector('.rep-column-summary');
+        if (existingSummary) {
+            existingSummary.remove();
+        }
 
-    // Helper to render schedule item card
-    const createScheduleCard = (item, badgeClass, badgeText) => {
-        const div = document.createElement('div');
-        div.className = 'rep-item-card';
-        div.style.borderLeftColor = item.color;
-        div.innerHTML = `
-            <div class="rep-item-header">
-                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
-                <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
-            </div>
-            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
-            <div class="rep-item-details">
-                <span><i class="fa fa-calendar-day" style="opacity: 0.7; margin-right: 4px;"></i> Data: <strong>${item.dateStr}</strong></span>
-            </div>
-        `;
-        return div;
-    };
+        if (items.length === 0) return;
 
-    // Helper to render supply item card
-    const createSupplyCard = (item, badgeClass, badgeText) => {
-        const div = document.createElement('div');
-        div.className = 'rep-item-card';
-        div.style.borderLeftColor = item.color;
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'rep-column-summary';
 
-        let materialsHtml = '';
-        item.materials.forEach(m => {
-            let note = '';
-            if (m.herdado) {
-                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #a855f7 !important;" title="Herdado do Térreo (Apto ${m.terreoUnit})"><i class="fa fa-lightbulb"></i></span>`;
-            } else if (m.observacao && m.observacao.includes('Kit')) {
-                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #fbbf24 !important;" title="Customização Kit Exclusivita"><i class="fa fa-gem"></i></span>`;
-            }
-            materialsHtml += `
-                <li style="margin-bottom: 4px; line-height: 1.2;">
-                    <strong>${m.quantidade}</strong> ${m.tipo || ''} - ${m.material}${note}
-                    ${m.subtipo ? `<span style="display: block; font-size: 0.7rem; opacity: 0.7; padding-left: 4px;">${m.subtipo}</span>` : ''}
-                </li>
+        if (type === 'schedule') {
+            // Sum frentes
+            const frentesCounts = {};
+            items.forEach(item => {
+                frentesCounts[item.frente] = (frentesCounts[item.frente] || 0) + 1;
+            });
+
+            summaryDiv.innerHTML = `
+                <div style="font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;"><i class="fa fa-chart-simple"></i> Acumulado da Semana:</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    ${Object.entries(frentesCounts).map(([frente, count]) => {
+                        const shortName = frente.length > 20 ? frente.substring(0, 18) + '...' : frente;
+                        return `<span class="summary-badge" style="border-left: 3px solid ${FRENTES_CORES[frente] || '#ccc'}" title="${frente}">${shortName}: <strong>${count} un</strong></span>`;
+                    }).join('')}
+                </div>
             `;
-        });
+        } else {
+            // Sum materials: key is `${m.material}||${m.tipo || ''}`
+            const materialSums = {};
+            items.forEach(item => {
+                item.materials.forEach(m => {
+                    const key = `${m.material}||${m.tipo || ''}`;
+                    if (!materialSums[key]) {
+                        materialSums[key] = {
+                            name: m.material,
+                            tipo: m.tipo || '',
+                            quantity: 0
+                        };
+                    }
+                    materialSums[key].quantity += parseFloat(m.quantidade) || 0;
+                });
+            });
 
-        div.innerHTML = `
-            <div class="rep-item-header">
-                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
-                <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
-            </div>
-            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
-            <div class="rep-item-details" style="margin-top: 4px;">
-                <ul style="margin: 0; padding-left: 14px; font-size: 0.8rem; color: var(--text-primary);">
-                    ${materialsHtml}
+            summaryDiv.innerHTML = `
+                <div style="font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;"><i class="fa fa-boxes-stacked"></i> Total de Insumos:</div>
+                <ul style="margin: 0; padding-left: 12px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.3;">
+                    ${Object.values(materialSums).map(m => {
+                        const qtyStr = m.quantity.toFixed(1).replace(/\.0$/, '');
+                        return `<li><strong>${qtyStr}</strong> ${m.tipo} - ${m.name}</li>`;
+                    }).join('')}
                 </ul>
-            </div>
-        `;
-        return div;
+            `;
+        }
+
+        // Insert summaryDiv right after the header
+        const header = container.parentElement.querySelector('.rep-column-header');
+        if (header) {
+            header.insertAdjacentElement('afterend', summaryDiv);
+        }
     };
 
-    // Populate DOM
-    // Clear list columns
-    schedLastWeek.innerHTML = '';
-    schedThisWeek.innerHTML = '';
-    schedNextWeek.innerHTML = '';
-    supplyLastWeek.innerHTML = '';
-    supplyThisWeek.innerHTML = '';
-    supplyNextWeek.innerHTML = '';
+    // Helper to render day group and its items
+    const renderDayGroupList = (container, items, weekMonday, isSupply, badgeClass, badgeText) => {
+        container.innerHTML = '';
+        if (items.length === 0) {
+            container.innerHTML = `<div class="empty-state" style="padding: 1.5rem 0; font-size: 0.8rem;">
+                <i class="fa ${isSupply ? 'fa-truck' : 'fa-calendar'}"></i>
+                <p>Nenhuma atividade planejada.</p>
+            </div>`;
+            return;
+        }
 
-    // 1. Schedule
-    if (schedLastItems.length === 0) {
-        schedLastWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma frente concluída.</p></div>';
-    } else {
-        schedLastItems.sort(sortUnits);
-        schedLastItems.forEach(item => {
-            schedLastWeek.appendChild(createScheduleCard(item, 'badge-concluido', 'Executado'));
+        // Group items by day index (0 to 6)
+        const grouped = {};
+        items.forEach(item => {
+            const dayIdx = item.date.getDay();
+            if (!grouped[dayIdx]) grouped[dayIdx] = [];
+            grouped[dayIdx].push(item);
         });
-    }
 
-    if (schedThisItems.length === 0) {
-        schedThisWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma frente planejada.</p></div>';
-    } else {
-        schedThisItems.sort(sortUnits);
-        schedThisItems.forEach(item => {
-            schedThisWeek.appendChild(createScheduleCard(item, 'badge-andamento', 'A Executar'));
-        });
-    }
+        // Loop weekdays
+        WEEKDAY_ORDER.forEach(dayIdx => {
+            const dayItems = grouped[dayIdx] || [];
+            
+            // By default, only show weekdays Monday to Friday, and Saturday/Sunday if they have items
+            const isWeekend = dayIdx === 0 || dayIdx === 6;
+            if (dayItems.length === 0 && isWeekend) {
+                return; // Hide weekend if empty
+            }
 
-    if (schedNextItems.length === 0) {
-        schedNextWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma previsão.</p></div>';
-    } else {
-        schedNextItems.sort(sortUnits);
-        schedNextItems.forEach(item => {
-            schedNextWeek.appendChild(createScheduleCard(item, 'badge-previsto', 'Previsão'));
-        });
-    }
+            const dayGroup = document.createElement('div');
+            dayGroup.className = 'rep-day-group';
 
-    // 2. Supply
-    if (supplyLastItems.length === 0) {
-        supplyLastWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhum material abastecido.</p></div>';
-    } else {
-        supplyLastItems.sort(sortUnits);
-        supplyLastItems.forEach(item => {
-            supplyLastWeek.appendChild(createSupplyCard(item, 'badge-concluido', 'Abastecido'));
-        });
-    }
+            // Calculate label with date: e.g. Segunda-feira (08/06)
+            const offset = dayIdx === 0 ? 6 : dayIdx - 1;
+            const targetDate = new Date(weekMonday.getTime() + offset * 24 * 60 * 60 * 1000);
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dayLabel = `${WEEKDAY_NAMES[dayIdx]} (${dd}/${mm})`;
 
-    if (supplyThisItems.length === 0) {
-        supplyThisWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhum material a abastecer.</p></div>';
-    } else {
-        supplyThisItems.sort(sortUnits);
-        supplyThisItems.forEach(item => {
-            supplyThisWeek.appendChild(createSupplyCard(item, 'badge-andamento', 'A Abastecer'));
-        });
-    }
+            dayGroup.innerHTML = `
+                <div class="rep-day-title">
+                    <span>${dayLabel}</span>
+                    <span style="font-size: 0.7rem; opacity: 0.8; font-weight: normal;">${dayItems.length} un</span>
+                </div>
+                <div class="rep-day-items-list" style="display: flex; flex-direction: column; gap: 8px;">
+                </div>
+            `;
 
-    if (supplyNextItems.length === 0) {
-        supplyNextWeek.innerHTML = '<div class="empty-state" style="padding: 1rem 0; font-size: 0.8rem;"><p>Nenhuma previsão.</p></div>';
-    } else {
-        supplyNextItems.sort(sortUnits);
-        supplyNextItems.forEach(item => {
-            supplyNextWeek.appendChild(createSupplyCard(item, 'badge-previsto', 'Previsão'));
+            const listDiv = dayGroup.querySelector('.rep-day-items-list');
+
+            if (dayItems.length === 0) {
+                listDiv.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; padding: 4px 0; display: block; text-align: center;">Nenhuma atividade</span>`;
+            } else {
+                // Sort by floor desc
+                dayItems.sort((a, b) => b.floor - a.floor || a.unit.localeCompare(b.unit));
+
+                dayItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'rep-item-card';
+                    card.style.borderLeftColor = item.color;
+
+                    if (!isSupply) {
+                        // Render schedule item
+                        card.innerHTML = `
+                            <div class="rep-item-header">
+                                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
+                                <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
+                        `;
+                    } else {
+                        // Render supply item
+                        let materialsHtml = '';
+                        item.materials.forEach(m => {
+                            let note = '';
+                            if (m.herdado) {
+                                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #a855f7 !important;" title="Herdado do Térreo (Apto ${m.terreoUnit})"><i class="fa fa-lightbulb"></i></span>`;
+                            } else if (m.observacao && m.observacao.includes('Kit')) {
+                                note = ` <span class="text-muted" style="font-size: 0.75rem; color: #fbbf24 !important;" title="Customização Kit Exclusivita"><i class="fa fa-gem"></i></span>`;
+                            }
+                            materialsHtml += `
+                                <li style="margin-bottom: 4px; line-height: 1.2;">
+                                    <strong>${m.quantidade}</strong> ${m.tipo || ''} - ${m.material}${note}
+                                    ${m.subtipo ? `<span style="display: block; font-size: 0.7rem; opacity: 0.7; padding-left: 4px;">${m.subtipo}</span>` : ''}
+                                </li>
+                            `;
+                        });
+
+                        card.innerHTML = `
+                            <div class="rep-item-header">
+                                <span class="rep-item-title">${item.unit.includes('Hall') ? item.unit : `Apto ${item.unit}`}</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="rep-item-badge ${badgeClass}">${badgeText}</span>
+                                    <i class="fa fa-edit text-warning btn-edit-materials" style="cursor: pointer; font-size: 0.85rem;" title="Editar materiais"></i>
+                                    <i class="fa fa-plus-circle text-success btn-add-material" style="cursor: pointer; font-size: 0.85rem;" title="Acrescentar material"></i>
+                                </div>
+                            </div>
+                            <div class="rep-item-subtitle" style="font-weight: 500; color: var(--text-primary);">${item.frente}</div>
+                            <div class="rep-item-details" style="margin-top: 4px;">
+                                <ul style="margin: 0; padding-left: 14px; font-size: 0.8rem; color: var(--text-primary);">
+                                    ${materialsHtml}
+                                </ul>
+                            </div>
+                        `;
+
+                        // Add listeners for editing/adding
+                        card.querySelector('.btn-edit-materials').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openEditPlanningMaterialsModal(item.unitId, item.frente, false);
+                        });
+                        card.querySelector('.btn-add-material').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openEditPlanningMaterialsModal(item.unitId, item.frente, true);
+                        });
+                    }
+
+                    listDiv.appendChild(card);
+                });
+            }
+
+            container.appendChild(dayGroup);
         });
-    }
+    };
+
+    // Render columns summaries
+    renderWeeklySummary(schedLastWeek, schedLastItems, 'schedule');
+    renderWeeklySummary(schedThisWeek, schedThisItems, 'schedule');
+    renderWeeklySummary(schedNextWeek, schedNextItems, 'schedule');
+
+    renderWeeklySummary(supplyLastWeek, supplyLastItems, 'supply');
+    renderWeeklySummary(supplyThisWeek, supplyThisItems, 'supply');
+    renderWeeklySummary(supplyNextWeek, supplyNextItems, 'supply');
+
+    // Render day groups
+    renderDayGroupList(schedLastWeek, schedLastItems, lastWeekMonday, false, 'badge-concluido', 'Executado');
+    renderDayGroupList(schedThisWeek, schedThisItems, refMonday, false, 'badge-andamento', 'A Executar');
+    renderDayGroupList(schedNextWeek, schedNextItems, nextWeekMonday, false, 'badge-previsto', 'Previsão');
+
+    renderDayGroupList(supplyLastWeek, supplyLastItems, lastWeekMonday, true, 'badge-concluido', 'Abastecido');
+    renderDayGroupList(supplyThisWeek, supplyThisItems, refMonday, true, 'badge-andamento', 'A Abastecer');
+    renderDayGroupList(supplyNextWeek, supplyNextItems, nextWeekMonday, true, 'badge-previsto', 'Previsão');
 }
 
-function openEditPlanningMaterialsModal(unitId) {
+function openEditPlanningMaterialsModal(unitId, focusFrenteName = null, autoAddMat = false) {
     const u = projectState.units.find(x => x.id === unitId);
     if (!u) return;
 
@@ -5982,15 +6090,29 @@ function openEditPlanningMaterialsModal(unitId) {
     const activeFrontName = FRENTES_SEQUENCIA[u.activeFrontIndex] || 'VQ';
     const frontsToShow = Array.from(new Set([activeFrontName, 'VH', 'VE', 'VQ', 'VA']));
 
+    // If focusFrenteName is not in the list, make sure it is shown!
+    if (focusFrenteName && !frontsToShow.includes(focusFrenteName)) {
+        frontsToShow.unshift(focusFrenteName); // Put it at the top
+    }
+
     frontsToShow.forEach(frenteName => {
         const fData = u.frontsData[frenteName] || {};
         const materials = getMaterialsForUnitFront(u, frenteName);
 
         const group = document.createElement('div');
+        group.id = `modal-edit-group-${frenteName.replace(/\s+/g, '_')}`;
         group.style.border = '1px solid var(--border-color)';
         group.style.borderRadius = '6px';
         group.style.padding = '10px';
         group.style.background = 'rgba(0,0,0,0.1)';
+        group.style.transition = 'all 0.3s';
+
+        // Highlight focused front
+        if (focusFrenteName === frenteName) {
+            group.style.border = '2px solid var(--primary-color)';
+            group.style.boxShadow = '0 0 10px rgba(0, 200, 83, 0.4)';
+            group.style.background = 'rgba(0, 200, 83, 0.03)';
+        }
 
         const header = document.createElement('div');
         header.style.display = 'flex';
@@ -6052,7 +6174,7 @@ function openEditPlanningMaterialsModal(unitId) {
             });
         };
 
-        group.querySelector('.btn-add-editor-material').addEventListener('click', () => {
+        const addMaterialRow = () => {
             materials.push({
                 material: "",
                 quantidade: 1,
@@ -6062,14 +6184,41 @@ function openEditPlanningMaterialsModal(unitId) {
                 data_lancamento: new Date().toLocaleDateString('pt-BR')
             });
             renderRows();
-        });
+
+            // Set focus to the last added row's first input
+            setTimeout(() => {
+                const rowInputs = rowsContainer.querySelectorAll('.material-editor-row');
+                if (rowInputs.length > 0) {
+                    const lastRow = rowInputs[rowInputs.length - 1];
+                    const nameInput = lastRow.querySelector('.edit-mat-name');
+                    if (nameInput) nameInput.focus();
+                }
+            }, 50);
+        };
+
+        group.querySelector('.btn-add-editor-material').addEventListener('click', addMaterialRow);
 
         renderRows();
         group.appendChild(rowsContainer);
         listContainer.appendChild(group);
+
+        // Auto add material if requested for this front
+        if (autoAddMat && focusFrenteName === frenteName) {
+            addMaterialRow();
+        }
     });
 
     document.getElementById('modal-edit-rep-materials').classList.remove('hidden');
+
+    // Scroll to the focused section
+    if (focusFrenteName) {
+        setTimeout(() => {
+            const el = document.getElementById(`modal-edit-group-${focusFrenteName.replace(/\s+/g, '_')}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 150);
+    }
 }
 
 async function handleSaveWeeklyMaterials(e) {
