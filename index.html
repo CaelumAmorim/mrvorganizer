@@ -170,14 +170,6 @@
                 </button>
             </form>
             
-            <div style="margin: 1.5rem 0; border-top: 1px dashed var(--border-color); text-align: center; position: relative;">
-                <span style="background: var(--bg-card); padding: 0 10px; font-size: 0.85rem; color: var(--text-muted); position: relative; top: -10px;">Ou</span>
-            </div>
-            
-            <button type="button" id="btn-login-generate-project" class="btn btn-outline btn-block" style="border-style: dashed; width: 100%;">
-                <i class="fa fa-circle-plus text-success"></i> Gerar Nova Obra
-            </button>
-            
             <div class="login-footer">
                 <p>Modo: <span id="db-mode-indicator">Carregando...</span></p>
                 <p class="powered-by">Powered by Rafael Amorim</p>
@@ -280,6 +272,11 @@
                     <li>
                         <a href="#" class="nav-link" data-target="page-planejamento">
                             <i class="fa fa-file-invoice"></i> <span>Planejamento Semanal</span>
+                        </a>
+                    </li>
+                    <li class="create-project-allowed">
+                        <a href="#" class="nav-link" data-target="page-criar-obra">
+                            <i class="fa fa-folder-plus"></i> <span>Criar Obra</span>
                         </a>
                     </li>
                     <li class="permissions-allowed">
@@ -969,6 +966,39 @@
                                 <button id="btn-danger-seed-splendore" class="btn btn-outline text-warning border-warning"><i class="fa fa-database"></i> Restaurar Dados Originais Splendore</button>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- PÁGINA: CRIAR NOVA OBRA (ADMIN/GESTOR ONLY) -->
+                <section id="page-criar-obra" class="page-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa fa-folder-plus"></i> Gerar Nova Obra</h2>
+                        </div>
+                        <p class="section-desc">Crie um novo banco de dados de obra para o sistema, definindo as torres, pavimentos e apartamentos.</p>
+                        
+                        <form id="form-generate-project">
+                            <div class="form-group">
+                                <label for="new-project-name">Nome da Obra</label>
+                                <input type="text" id="new-project-name" placeholder="Ex: MRV - Chapada Imperial" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-project-key">Identificador Único (Usado no Banco de Dados / Link)</label>
+                                <input type="text" id="new-project-key" placeholder="Ex: chapada_imperial" required readonly style="background-color: var(--bg-primary); opacity: 0.7;">
+                            </div>
+                            
+                            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;"><i class="fa fa-building"></i> Configuração das Torres</h3>
+                            
+                            <div id="new-project-towers-list">
+                                <!-- Dynamic config rows are added here -->
+                            </div>
+                            
+                            <button type="button" class="btn btn-sm btn-outline" id="btn-add-new-tower-row" style="margin-top: 0.5rem;"><i class="fa fa-plus"></i> Adicionar Torre</button>
+                            
+                            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 8px;">
+                                <button type="submit" class="btn btn-primary"><i class="fa fa-circle-plus"></i> Gerar Obra</button>
+                            </div>
+                        </form>
                     </div>
                 </section>
 
@@ -1789,60 +1819,6 @@
         </div>
     </div>
 
-    <!-- MODAL: GERAR NOVA OBRA -->
-    <div id="modal-generate-project" class="modal-overlay hidden">
-        <div class="modal-card modal-lg">
-            <div class="modal-header">
-                <h2 id="modal-generate-project-title">Gerar Nova Obra</h2>
-                <button type="button" class="btn-close modal-close" id="btn-close-generate-project"><i class="fa fa-xmark"></i></button>
-            </div>
-            
-            <!-- VIEW 1: AUTHENTICATION FOR ADMIN -->
-            <form id="form-gen-project-auth" style="padding: 1.5rem;">
-                <h3 style="text-align: center; margin-bottom: 1.5rem;"><i class="fa fa-lock text-success" style="font-size: 1.8rem; display: block; margin-bottom: 0.5rem;"></i> Autenticação do Administrador</h3>
-                <div class="form-group">
-                    <label for="gen-auth-username">Usuário</label>
-                    <input type="text" id="gen-auth-username" placeholder="Digite o usuário administrador" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="gen-auth-password">Senha</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="gen-auth-password" placeholder="Digite a senha master" required>
-                        <button type="button" id="toggle-gen-auth-password" class="btn-icon-toggle"><i class="fa fa-eye"></i></button>
-                    </div>
-                </div>
-                <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                    <button type="button" class="btn btn-outline" id="btn-cancel-gen-auth">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btn-submit-gen-auth">Entrar</button>
-                </div>
-            </form>
-
-            <!-- VIEW 2: FORM FOR GENERATING PROJECT -->
-            <form id="form-generate-project" class="hidden">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="new-project-name">Nome da Obra</label>
-                        <input type="text" id="new-project-name" placeholder="Ex: MRV - Chapada Imperial" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-project-key">Identificador Único (Usado no Banco de Dados / Link)</label>
-                        <input type="text" id="new-project-key" placeholder="Ex: chapada_imperial" required readonly style="background-color: var(--bg-primary); opacity: 0.7;">
-                    </div>
-                    
-                    <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;"><i class="fa fa-building"></i> Configuração das Torres</h3>
-                    
-                    <div id="new-project-towers-list">
-                        <!-- Dynamic config rows are added here -->
-                    </div>
-                    
-                    <button type="button" class="btn btn-sm btn-outline" id="btn-add-new-tower-row" style="margin-top: 0.5rem;"><i class="fa fa-plus"></i> Adicionar Torre</button>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" id="btn-cancel-generate-project">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Gerar Obra</button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <!-- Script de Inicialização da SPA -->

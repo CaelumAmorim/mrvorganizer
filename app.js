@@ -1048,69 +1048,6 @@ function setupEventListeners() {
     if (btnAddNewTowerRow) {
         btnAddNewTowerRow.addEventListener('click', addNewTowerConfigRow);
     }
-    const btnCloseGenerateProject = document.getElementById('btn-close-generate-project');
-    if (btnCloseGenerateProject) {
-        btnCloseGenerateProject.addEventListener('click', () => {
-            document.getElementById('modal-generate-project').classList.add('hidden');
-        });
-    }
-    const btnCancelGenerateProject = document.getElementById('btn-cancel-generate-project');
-    if (btnCancelGenerateProject) {
-        btnCancelGenerateProject.addEventListener('click', () => {
-            document.getElementById('modal-generate-project').classList.add('hidden');
-        });
-    }
-    
-    // Admin credentials form inside Project Generation Modal
-    const formGenProjectAuth = document.getElementById('form-gen-project-auth');
-    if (formGenProjectAuth) {
-        formGenProjectAuth.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const usernameVal = document.getElementById('gen-auth-username').value.trim();
-            const passwordVal = document.getElementById('gen-auth-password').value;
-            
-            if (usernameVal === 'admin' && passwordVal === '030348') {
-                // Hide auth form, show generator form
-                document.getElementById('form-gen-project-auth').classList.add('hidden');
-                document.getElementById('form-generate-project').classList.remove('hidden');
-                
-                // Reset form and initialize list of towers
-                document.getElementById('form-generate-project').reset();
-                document.getElementById('new-project-towers-list').innerHTML = '';
-                addNewTowerConfigRow();
-            } else {
-                alert("Usuário ou senha incorretos. Acesso negado.");
-            }
-        });
-    }
-
-    const btnCancelGenAuth = document.getElementById('btn-cancel-gen-auth');
-    if (btnCancelGenAuth) {
-        btnCancelGenAuth.addEventListener('click', () => {
-            document.getElementById('modal-generate-project').classList.add('hidden');
-        });
-    }
-
-    const toggleGenAuthPassword = document.getElementById('toggle-gen-auth-password');
-    const genAuthPasswordInput = document.getElementById('gen-auth-password');
-    if (toggleGenAuthPassword && genAuthPasswordInput) {
-        toggleGenAuthPassword.addEventListener('click', () => {
-            if (genAuthPasswordInput.type === 'password') {
-                genAuthPasswordInput.type = 'text';
-                toggleGenAuthPassword.querySelector('i').className = 'fa fa-eye-slash';
-            } else {
-                genAuthPasswordInput.type = 'password';
-                toggleGenAuthPassword.querySelector('i').className = 'fa fa-eye';
-            }
-        });
-    }
-
-    // Trigger button from login screen
-    const btnLoginGenerateProject = document.getElementById('btn-login-generate-project');
-    if (btnLoginGenerateProject) {
-        btnLoginGenerateProject.addEventListener('click', openGenerateProjectFlow);
-    }
-    
     const newProjectNameInput = document.getElementById('new-project-name');
     if (newProjectNameInput) {
         newProjectNameInput.addEventListener('input', (e) => {
@@ -1265,6 +1202,13 @@ function loginSuccess(user) {
         document.querySelectorAll('.permissions-allowed').forEach(el => el.classList.add('hidden'));
     }
 
+    const canCreateProject = user.role === 'admin' || user.role === 'gestor';
+    if (canCreateProject) {
+        document.querySelectorAll('.create-project-allowed').forEach(el => el.classList.remove('hidden'));
+    } else {
+        document.querySelectorAll('.create-project-allowed').forEach(el => el.classList.add('hidden'));
+    }
+
     // Default to first page
     navLinks.forEach(l => l.classList.remove('active'));
     document.querySelector('[data-target="page-mapa"]').classList.add('active');
@@ -1276,6 +1220,7 @@ function navigateToPage(pageId) {
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro');
     const canConfig = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor');
     const canManagePermissions = currentUser && (currentUser.role === 'admin' || currentUser.role === 'engenheiro' || currentUser.role === 'gestor' || currentUser.role === 'diretor');
+    const canCreateProject = currentUser && (currentUser.role === 'admin' || currentUser.role === 'gestor');
 
     if (pageId === 'page-usuarios' && !isPowerUser) {
         pageId = 'page-mapa';
@@ -1284,6 +1229,9 @@ function navigateToPage(pageId) {
         pageId = 'page-mapa';
     }
     if (pageId === 'page-permissoes' && !canManagePermissions) {
+        pageId = 'page-mapa';
+    }
+    if (pageId === 'page-criar-obra' && !canCreateProject) {
         pageId = 'page-mapa';
     }
 
@@ -1319,6 +1267,9 @@ function navigateToPage(pageId) {
     } else if (pageId === 'page-permissoes') {
         pageTitle.textContent = "Permissões de Acesso";
         initPermissoesPage();
+    } else if (pageId === 'page-criar-obra') {
+        pageTitle.textContent = "Criar Nova Obra";
+        initCriarObraPage();
     }
 }
 
@@ -6470,50 +6421,12 @@ async function renderProjectSelector() {
         
         grid.appendChild(card);
     });
-
-    // 5. Render "Gerar Nova Obra" card
-    const genCard = document.createElement('div');
-    genCard.className = 'project-card';
-    genCard.id = 'btn-generate-project';
-    genCard.style.cssText = `background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; text-align: center; border-style: dashed;`;
-    
-    genCard.innerHTML = `
-        <i class="fa fa-circle-plus text-success" style="font-size: 2.2rem; margin-bottom: 0.75rem;"></i>
-        <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px;">Gerar Nova Obra</h3>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">Apenas Administrador (senha)</p>
-    `;
-    
-    genCard.addEventListener('click', openGenerateProjectFlow);
-    grid.appendChild(genCard);
 }
 
-function openGenerateProjectFlow() {
-    const modal = document.getElementById('modal-generate-project');
-    if (modal) {
-        modal.classList.remove('hidden');
-        
-        // Exibe tela de autenticação e esconde formulário de geração
-        const authForm = document.getElementById('form-gen-project-auth');
-        if (authForm) {
-            authForm.classList.remove('hidden');
-            authForm.reset();
-        }
-        
-        const genForm = document.getElementById('form-generate-project');
-        if (genForm) {
-            genForm.classList.add('hidden');
-        }
-        
-        // Reseta campo de senha para tipo password e ícone
-        const passwordInput = document.getElementById('gen-auth-password');
-        if (passwordInput) {
-            passwordInput.type = 'password';
-        }
-        const toggleIcon = document.getElementById('toggle-gen-auth-password')?.querySelector('i');
-        if (toggleIcon) {
-            toggleIcon.className = 'fa fa-eye';
-        }
-    }
+function initCriarObraPage() {
+    document.getElementById('form-generate-project').reset();
+    document.getElementById('new-project-towers-list').innerHTML = '';
+    addNewTowerConfigRow();
 }
 
 function addNewTowerConfigRow() {
@@ -6688,7 +6601,6 @@ async function handleGenerateProjectSubmit(e) {
                 }
                 
                 alert(`Obra "${name}" gerada com sucesso no servidor!`);
-                document.getElementById('modal-generate-project').classList.add('hidden');
                 
                 syncMode = 'api';
                 updateConnectionBadge(true);
@@ -6696,6 +6608,7 @@ async function handleGenerateProjectSubmit(e) {
                 
                 loginContainer.classList.remove('hidden');
                 document.getElementById('project-selector-container').classList.add('hidden');
+                appContainer.classList.add('hidden');
                 
                 document.getElementById('username').value = "admin";
                 document.getElementById('password').value = "admin123";
@@ -6722,13 +6635,13 @@ async function handleGenerateProjectSubmit(e) {
     }
     
     alert(`Obra "${name}" gerada localmente no navegador!`);
-    document.getElementById('modal-generate-project').classList.add('hidden');
     
     updateConnectionBadge(false);
     dbModeIndicator.textContent = "Navegador Offline";
     
     loginContainer.classList.remove('hidden');
     document.getElementById('project-selector-container').classList.add('hidden');
+    appContainer.classList.add('hidden');
     
     document.getElementById('username').value = "admin";
     document.getElementById('password').value = "admin123";
