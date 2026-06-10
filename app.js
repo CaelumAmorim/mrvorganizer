@@ -1279,7 +1279,7 @@ function navigateToPage(pageId) {
 
 function getUnitQualityStatus(unit, frontName) {
     if (unit.isHall) {
-        return 'APROVADO';
+        return 'BLOQUEADO';
     }
 
     if (frontName === 'VH') {
@@ -1433,11 +1433,15 @@ function renderSummaryStats() {
         if (vaSummaryEl) {
             vaSummaryEl.classList.remove('hidden');
             
+            // Filter out halls for quality control statistics
+            const activeUnits = projectState.units.filter(u => !u.isHall);
+            const totalApartments = activeUnits.length;
+            
             let html = `<div class="va-summary-container">`;
-            html += compileQualityStatsForScope(projectState.units, "VISÃO GERAL OBRA", projectState.units.length, activeFilterFront);
+            html += compileQualityStatsForScope(activeUnits, "VISÃO GERAL OBRA", totalApartments, activeFilterFront);
             projectState.towers.forEach(t => {
-                const towerUnits = projectState.units.filter(u => u.tower === t.name);
-                html += compileQualityStatsForScope(towerUnits, `VISÃO GERAL ${t.name.toUpperCase()}`, projectState.units.length, activeFilterFront);
+                const towerApartments = activeUnits.filter(u => u.tower === t.name);
+                html += compileQualityStatsForScope(towerApartments, `VISÃO GERAL ${t.name.toUpperCase()}`, totalApartments, activeFilterFront);
             });
             html += `</div>`;
             
@@ -1447,7 +1451,9 @@ function renderSummaryStats() {
         if (vaSummaryEl) vaSummaryEl.classList.add('hidden');
         if (normalSummaryEl) normalSummaryEl.classList.remove('hidden');
         
-        const totalUnits = projectState.units.length;
+        // Filter out halls for general progress statistics
+        const activeUnits = projectState.units.filter(u => !u.isHall);
+        const totalUnits = activeUnits.length;
         let vqAprovados = 0;
         let vqReprovados = 0;
         let vaAprovados = 0;
@@ -1455,7 +1461,7 @@ function renderSummaryStats() {
         let ativas = 0;
         let totalProgressSum = 0;
 
-        projectState.units.forEach(u => {
+        activeUnits.forEach(u => {
             totalProgressSum += u.activeFrontIndex;
             
             if (u.activeFrontIndex > 0 && u.activeFrontIndex < FRENTES_SEQUENCIA.length) {
